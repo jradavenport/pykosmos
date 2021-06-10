@@ -37,7 +37,9 @@ def dtwalign(arc, ref, display=False, upsample=True, Ufactor=5,
     upsample : bool (optional (default=True)
         do the DTW on an up-sampled version of the observed arc and reference
         spectra using a gaussian smooth. Linearlly down-sample result.
-
+    Ufactor : int (default=5)
+        the factor to up-sample both the ref and arc spectra by.
+        UPGRADE IDEA: up-sample the arc and ref by different factors?
     display : bool (optional, default=False)
         if set, produce a plot of pixel vs wavelength solution
 
@@ -50,7 +52,7 @@ def dtwalign(arc, ref, display=False, upsample=True, Ufactor=5,
 
     # use Dynamic Time Warping!
     # https://doi.org/10.18637/jss.v031.i07
-    # Normalize by the mean, and use the "symmetric1" pattern, both seem to help.
+    # Normalize by the mean, seems to help if amplitudes are different.
     # x1, x2 = arc.flux.value / np.nanmean(arc.flux.value),  ref.flux.value / np.nanmean(ref.flux.value)
 
     if upsample:
