@@ -8,6 +8,8 @@ from IPython.display import display
 from scipy.optimize import curve_fit
 from scipy.interpolate import UnivariateSpline
 from astropy.table import Table
+# from specutils.manipulation import FluxConservingResampler, gaussian_smooth
+# from specutils import Spectrum1D
 
 __all__ = ['identify', 'identify_widget', 'find_peaks']
 
@@ -46,7 +48,7 @@ def find_peaks(wave, flux, pwidth=10, pthreshold=0.97, minsep=1):
     Parameters
     ----------
     wave : `~numpy.ndarray`
-        Wavelength
+        Wavelength (could be approximate)
     flux : `~numpy.ndarray`
         Flux
     pwidth : float (default=10)
@@ -74,8 +76,8 @@ def find_peaks(wave, flux, pwidth=10, pthreshold=0.97, minsep=1):
     pk = pk[pk > pwidth]
     pk = pk[pk < (len(flux) - pwidth)]
 
-    pcent_pix = np.zeros_like(pk,dtype='float')
-    wcent_pix = np.zeros_like(pk,dtype='float') # wtemp[pk]
+    pcent_pix = np.zeros_like(pk, dtype='float')
+    wcent_pix = np.zeros_like(pk, dtype='float') # wtemp[pk]
     # for each peak, fit a gaussian to find center
     for i in range(len(pk)):
         xi = wave[pk[i] - pwidth:pk[i] + pwidth]
@@ -83,7 +85,7 @@ def find_peaks(wave, flux, pwidth=10, pthreshold=0.97, minsep=1):
 
         pguess = (np.nanmax(yi), np.nanmedian(flux), float(np.nanargmax(yi)), 2.)
         try:
-            popt,pcov = curve_fit(_gaus, np.arange(len(xi),dtype='float'), yi,
+            popt,pcov = curve_fit(_gaus, np.arange(len(xi), dtype='float'), yi,
                                   p0=pguess)
 
             # the gaussian center of the line in pixel units
@@ -105,8 +107,8 @@ def identify(xpixels, flux, identify_mode='',
              previous_file='',
              xpoints=[], wpoints=[],
              linewave=[], autotol=25,
-             ref_wave=[], ref_flux=[], cbins=50,
              fit_mode='spline', polydeg=7,):
+    #              ref_wave=[], ref_flux=[], cbins=50,
     """
     identify's job is to find peaks/features and identify which wavelength they are
 
@@ -115,7 +117,7 @@ def identify(xpixels, flux, identify_mode='',
     For an interactive mode, use
 
     identify methods to consider:
-    - interactive widget (basically done)
+    - interactive widget (basically done with different widget)
     - nearest guess from a line list (using approximate wavelength sol'n, e.g. from header)
     - cross-corl from previous solution (best auto method)
     - automatic line hash (maybe get to)
@@ -144,7 +146,7 @@ def identify(xpixels, flux, identify_mode='',
 
         # in this mode, the xpixel input array is actually the approximate
         # wavelength solution (e.g. from the header info)
-        pcent_pix, wcent_pix = find_peaks(xpixels, flux, pwidth=10, pthreshold=97)
+        pcent_pix, wcent_pix = find_peaks(xpixels, flux, pwidth=10, pthreshold=0.97)
 
         # A simple, greedy, line-finding solution.
         # Loop thru each detected peak, from center outwards. Find nearest
@@ -175,7 +177,8 @@ def identify(xpixels, flux, identify_mode='',
                     xps = np.argsort(xpoints)
                     spl = UnivariateSpline(xpoints[xps], wpoints[xps], ext=0, k=3, s=1e3)
                     wcent_guess = spl(pcent_pix)
-        print("Mode='nearest': " + str(len(wpoints)) + ' lines matched.')
+        inrng = sum((linewave >= np.nanmin(wcent_guess)) & (linewave <= np.nanmax(wcent_guess)))
+        print("Mode='nearest': " + str(len(wpoints)) + ' lines matched from '+ str(len(inrng))+ ' in estimated range.')
 
 
     #######
