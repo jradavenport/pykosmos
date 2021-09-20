@@ -13,9 +13,10 @@ from scipy.interpolate import UnivariateSpline, interp1d
 from specutils import Spectrum1D
 import dtw
 from specutils.manipulation import FluxConservingResampler, gaussian_smooth
+from specutils.utils.wcs_utils import air_to_vac as a2v
 
 __all__ = ['identify_widget', 'identify_nearest',
-           'identify_dtw', 'find_peaks', 'fit_wavelength']
+           'identify_dtw', 'find_peaks', 'fit_wavelength', 'air_to_vac']
 
 
 def _gaus(x, a, b, x0, sigma):
@@ -550,4 +551,25 @@ def fit_wavelength(spec, xpoints, wpoints,
                          uncertainty=spec.uncertainty
                          )
 
+    return outspec
+
+
+def air_to_vac(spec):
+    '''
+    Simple wrapper for the `air_to_vac` calculation within `specutils.utils.wcs_utils`
+
+    Parameters
+    ----------
+    spec : Spectrum1D object
+
+    Returns
+    -------
+    Spectrum1D object with spectral_axis converted from air to vaccum units
+
+    '''
+    new_wave = a2v(spec.wavelength)
+    outspec = Spectrum1D(spectral_axis=new_wave,
+                         flux=spec.flux,
+                         uncertainty=spec.uncertainty
+                         )
     return outspec
