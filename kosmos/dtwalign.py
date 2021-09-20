@@ -68,8 +68,6 @@ def dtwalign(arc, ref, display=False, upsample=True, Ufactor=5,
 
     # use Dynamic Time Warping!
     # https://doi.org/10.18637/jss.v031.i07
-    # Normalize by the mean, seems to help if amplitudes are different.
-    # x1, x2 = arc.flux.value / np.nanmean(arc.flux.value),  ref.flux.value / np.nanmean(ref.flux.value)
 
     if upsample:
         FCR = FluxConservingResampler()
@@ -86,6 +84,7 @@ def dtwalign(arc, ref, display=False, upsample=True, Ufactor=5,
     else:
         x1, x2 = arc, ref
 
+    # Normalize by the mean, seems to help if amplitudes are vastly different.
     alignment = dtw.dtw(x1.flux.value / np.nanmean(x1.flux.value),
                         x2.flux.value / np.nanmean(x2.flux.value),
                         keep_internals=True, step_pattern=step_pattern,
