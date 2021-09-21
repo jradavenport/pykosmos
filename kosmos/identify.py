@@ -175,131 +175,6 @@ def identify_nearest(arcspec, wapprox=None, linewave=None, autotol=25, silent=Fa
     return xpoints, wpoints * xpixels.unit
 
 
-# def identify(xpixels, flux, identify_mode='',
-#              previous_file='',
-#              xpoints=[], wpoints=[],
-#              linewave=[], autotol=25,
-#              fit_mode='spline', polydeg=7,):
-#     #              ref_wave=[], ref_flux=[], cbins=50,
-#     """
-#     identify's job is to find peaks/features and identify which wavelength they are
-#
-#     identify_mode: available choices are
-#     {'nearest', 'file', 'lines', 'crosscor'}.
-#     For an interactive mode, use
-#
-#     identify methods to consider:
-#     - interactive widget (basically done with different widget)
-#     - nearest guess from a line list (using approximate wavelength sol'n, e.g. from header)
-#     - cross-corl from previous solution (best auto method)
-#     - automatic line hash (maybe get to)
-#
-#     then it can (by default) generate a solution for the lines/features -> all xpixels
-#     - polynomial (easy - can use BIC to guess the order)
-#     - interpolation (easy, but not smooth)
-#     - spline (fairly simple, but fickle esp. at edges)
-#     - GaussianProcess
-#
-#     """
-#
-#     # Check that identify mode is valid
-#
-#     #######
-#     # if identify_mode.lower() == 'interact':
-#     #     xpoints, wpoints = identify_widget(xpixels, flux)
-#
-#     #######
-#     if identify_mode.lower() == 'nearest':
-#         if len(linewave)<1:
-#             msg_fail = '''
-#             linewave not provided!
-#             For identify_mode='nearest', linewave=[] must be an array of known line wavelengths.'''
-#             raise ValueError(msg_fail)
-#
-#         # in this mode, the xpixel input array is actually the approximate
-#         # wavelength solution (e.g. from the header info)
-#         pcent_pix, wcent_pix = find_peaks(xpixels, flux, pwidth=10, pthreshold=0.97)
-#
-#         # A simple, greedy, line-finding solution.
-#         # Loop thru each detected peak, from center outwards. Find nearest
-#         # known list line. If no known line within tolerance, skip
-#
-#         # PLAN: predict solution w/ spline, start in middle, identify nearest match,
-#         # every time there's a new match, recalc the spline sol'n, work all the way out
-#         # this both identifies lines, and has byproduct of ending w/ a spline model
-#
-#         xpoints = np.array([], dtype=np.float) # pixel line centers
-#         wpoints = np.array([], dtype=np.float) # wavelength line centers
-#
-#         # find center-most lines, sort by dist from center pixels
-#         ss = np.argsort(np.abs(wcent_pix - np.nanmedian(xpixels)))
-#
-#         # 1st guess is the peak locations in the wavelength units as given by user
-#         wcent_guess = wcent_pix
-#
-#         for i in range(len(pcent_pix)):
-#             # if there is a match within the tolerance
-#             if (np.nanmin(np.abs(wcent_guess[ss][i] - linewave)) < autotol):
-#                 # add corresponding pixel and known wavelength to output vectors
-#                 xpoints = np.append(xpoints, pcent_pix[ss[i]])
-#                 wpoints = np.append(wpoints, linewave[np.nanargmin(np.abs(wcent_guess[ss[i]] - linewave))])
-#
-#                 # start guessing new wavelength model after first few lines identified
-#                 if (len(wpoints) > 4):
-#                     xps = np.argsort(xpoints)
-#                     spl = UnivariateSpline(xpoints[xps], wpoints[xps], ext=0, k=3, s=1e3)
-#                     wcent_guess = spl(pcent_pix)
-#         inrng = sum((linewave >= np.nanmin(wcent_guess)) & (linewave <= np.nanmax(wcent_guess)))
-#         print("Mode='nearest': " + str(len(wpoints)) + ' lines matched from ' + str(inrng) +
-#               ' in estimated range.')
-#
-#
-#     #######
-#     if identify_mode.lower() == "file":
-#         # read a previously saved .lines file
-#         if len(previous_file)==0:
-#             raise ValueError('For identify_mode="previous", `previous_file` must give the path to the previously saved lines file.')
-#
-#         tbl = Table.read(previous_file, format='ascii', names=('pix', 'wave'))
-#         xpoints, wpoints = tbl['pix'], tbl['wave']
-#         print("Mode='file': " + str(len(wpoints)) + ' lines used from '+previous_file)
-#
-#     if identify_mode.lower() == 'lines':
-#         if (len(xpoints) != len(wpoints)) | (len(xpoints) == 0):
-#             raise ValueError('xpoints and wpoints must match in length, and be greater than 0 length')
-#         print("Mode='lines': " + str(len(wpoints)) + ' lines used.')
-#
-#     #######
-#     # if identify_mode.lower() == 'crosscor':
-#
-#     # sort the points, just in case the method (or prev run) returns in weird order
-#     srt = np.argsort(xpoints)
-#     xpoints = xpoints[srt]
-#     wpoints = wpoints[srt]
-#
-#     # now turn the identified (xpixel, wavelength) points -> wavelength(x)
-#     # Require at least... 4 identified lines to generate a solution?
-#     if (len(xpoints) > 4):
-#         if (fit_mode.lower() == 'spline'):
-#             # assuming there is a flux value for every xpixel of interest
-#             # and that it starts at pixel = 0
-#             # apply our final wavelength spline solution to the entire array
-#             spl = UnivariateSpline(xpoints, wpoints, ext=0, k=3, s=1e3)
-#             wavesolved = spl(np.arange(np.size(flux)))
-#
-#         if (fit_mode.lower() == 'poly'):
-#             fit = np.polyfit(xpoints, wpoints, polydeg)
-#             wavesolved = np.polyval(fit, np.arange(np.size(flux)))
-#
-#         if (fit_mode.lower() == 'interp'):
-#             wavesolved = np.interp(np.arange(np.size(flux)), xpoints, wpoints)
-#     else:
-#         raise ValueError('Too few lines identified to derive a solution. len(xpoints)='+str(len(xpoints)))
-#
-#     return wavesolved
-
-# update to use spectral object!
-
 def identify_widget(arcspec, silent=False):
     """
     Interactive version of the Identify GUI, specifically using ipython widgets.
@@ -465,6 +340,9 @@ def identify_dtw(arc, ref, display=False, upsample=True, Ufactor=5,
     # use Dynamic Time Warping!
     # https://doi.org/10.18637/jss.v031.i07
 
+    # IMPROVEMENT NEEDED: check that both spectra are sorted, FCR returns NaNs if not.
+    # if not, sort them, and then return back in the original form
+
     if upsample:
         FCR = FluxConservingResampler()
         spec1 = FCR(arc, np.linspace(arc.spectral_axis.value.min(),
@@ -520,9 +398,9 @@ def identify_dtw(arc, ref, display=False, upsample=True, Ufactor=5,
     #                   flux=arc.flux,
     #                   uncertainty=arc.uncertainty)
 
-    # to fit w/ other "identify" methods, return
-    # xpoints, wpoints
-    return arc.spectral_axis.value, wav_guess * ref.spectral_axis.unit
+    # to fit w/ other "identify" methods, return (pixels, wavelength)
+    xpoints, wpoints = arc.spectral_axis.value, wav_guess * ref.spectral_axis.unit
+    return xpoints, wpoints
 
 
 def fit_wavelength(spec, xpoints, wpoints,
