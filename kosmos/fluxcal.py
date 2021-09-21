@@ -12,7 +12,8 @@ from specutils import Spectrum1D
 import os
 
 
-__all__ = ['airmass_cor', 'obs_extinction', 'standard_sensfunc', 'apply_sensfunc', 'mag2flux']
+__all__ = ['mag2flux', 'obs_extinction', 'airmass_cor', 'onedstd',
+           'standard_sensfunc', 'apply_sensfunc']
 
 
 def mag2flux(spec_in, zeropt=48.60):
@@ -37,7 +38,8 @@ def mag2flux(spec_in, zeropt=48.60):
     lamb = spec_in.spectral_axis
     mag = spec_in.flux.value
 
-    flux = (10.0 ** ((mag + zeropt) / (-2.5))) * (cc.to('AA/s').value / lamb ** 2.0)
+    # caution, getting a bit sloppy with units here, especially in wavelength...
+    flux = (10.0 ** ((mag + zeropt) / (-2.5))) * (cc.to('AA/s').value / lamb.value ** 2.0)
     flux = flux * u.erg / u.s / u.angstrom / (u.cm * u.cm)
 
     # NOTE: we're ommiting the uncertainty here, since this function is
@@ -118,24 +120,28 @@ def airmass_cor(object_spectrum, airmass, Xfile):
 
 def onedstd(stdstar):
     '''
-    Load the onedstd from the supplied library
+    Load the one-dimensional standard star from the supplied library
+    "onedstd", originally from IRAF. The provenance of these reference
+    spectra are varied, and future work includes creating a uniform set.
 
     Parameters
     ----------
     stdstar : str
         Name of the standard star file in the kosmos/resources/onedstds
-        directory to be used for the flux calibration. The user must provide the
-        subdirectory and file name. For example:
+        directory to be used for the flux calibration. The user must
+        provide the subdirectory and file name. For example:
 
-        >>> standard_sensfunc(obj_wave, obj_flux, stdstar='spec50cal/bd284211.dat', mode='spline')  \
+        >>> standard_sensfunc(obj_spec, standard, stdstar='spec50cal/bd284211.dat', mode='spline')  \
         # doctest: +SKIP
 
-        If no std is supplied, or an improper path is given, will raise a ValueError.
+        If no standard is supplied, or an improper path is given,
+        will raise a ValueError.
 
     Returns
     -------
         astropy Table with onedstd data
     '''
+
     std_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                            'resources', 'onedstds')
 
@@ -154,7 +160,8 @@ def onedstd(stdstar):
 
     # standard star spectrum is stored in magnitude units (IRAF conventions)
     # convert to flux
-    std_flux = mag2flux(Spectrum1D(flux=standard['mag'], spectral_axis=standard['wave']))
+    std_flux = mag2flux(Spectrum1D(flux=standard['mag'].quantity,
+                                   spectral_axis=standard['wave'].quantity))
     std_flux = std_flux.flux
 
     # add column with flux units to the Table
@@ -282,13 +289,12 @@ def apply_sensfunc(object_spectrum, sensfunc_spec):
 
     obj_wave, obj_flux = object_spectrum.wavelength, object_spectrum.flux
 
-    # # sort, in case the sensfunc wavelength axis is backwards
-    ## I dont think this is needed? And anyway, it doesnt make sense as prev written
-    # ss = np.argsort(obj_wave.value)
+    # sort, in case the sensfunc wavelength axis is backwards, interp can get angry
+    srt = np.argsort(sensfunc_spec.wavelength.value)
 
     # interpolate the sensfunc onto the observed wavelength axis, in case they don't match
     # IMPROVEMENT: could this be done w/ `specutils.manipulation.FluxConservingResampler`?
-    sensfunc2 = np.interp(obj_wave.value, sensfunc_spec.wavelength.value, sensfunc_spec.flux.value)
+    sensfunc2 = np.interp(obj_wave.value, sensfunc_spec.wavelength.value[srt], sensfunc_spec.flux.value[srt])
 
     # multiply the observed object spectrum by the interpolated sensitivity function
     # *should* update units properly, for both flux and uncertainty

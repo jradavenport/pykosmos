@@ -188,7 +188,7 @@ def trace(img, nbins=20, guess=None, window=None, display=False):
     return my
 
 
-def BoxcarExtract(img, trace_line,apwidth=8, skysep=3, skywidth=7, skydeg=0,
+def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
                   display=False):
     """
     **This is nearly identical to `specreduce.extract.BoxcarExtract`
