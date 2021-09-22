@@ -1,7 +1,13 @@
 """
-Functions that work to identify spectral features, and fit them for wavelength calibration.
+Functions that work to identify spectral features, and fit them for
+wavelength calibration.
 
-The work flow is: `identify` functions are used to either manually or automatically find features,
+The work flow is: `identify` functions are used to either manually or
+automatically find features (e.g. arclines at known wavelengths), and then
+`fit_wavelength` simply interpolates.
+
+IMPROVEMENT NEEDED: some form of reidentify, which takes a very close
+solution and does simple (affine?) scaling.
 """
 
 import ipywidgets as widgets
