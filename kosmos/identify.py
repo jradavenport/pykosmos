@@ -20,8 +20,12 @@ from specutils import Spectrum1D
 import dtw
 from specutils.manipulation import FluxConservingResampler, gaussian_smooth
 from specutils.utils.wcs_utils import air_to_vac as a2v
+import os
+import pandas as pd
+# from astropy import units as u
+# from astropy.table import Table
 
-__all__ = ['identify_widget', 'identify_nearest',
+__all__ = ['identify_widget', 'loadlinelist', 'identify_nearest',
            'identify_dtw', 'find_peaks', 'fit_wavelength', 'air_to_vac']
 
 
@@ -114,8 +118,48 @@ def find_peaks(wave, flux, pwidth=10, pthreshold=0.97, minsep=1):
     return pcent_pix[okcent], wcent_pix[okcent]
 
 
-def identify_nearest(arcspec, wapprox=None, linewave=None, autotol=25, silent=False):
+def loadlinelist(file):
+    '''
+    Load a list of arclamp lines from the supplied library of files in the
+    directory: kosmos/resources/linelists.
+
+    Note: this directory was mostly taken from IRAF.
+    https://github.com/joequant/iraf/tree/master/noao/lib/linelists
+
+    Parameters
+    ----------
+    file : str
+        name of linelist to load
+
+    Returns
+    -------
+    numpy array of arclines
+    '''
+
+    dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                       'resources', 'linelists')
+
+    if not os.path.isfile(os.path.join(dir, file)):
+        msg2 = "No valid linelist file found at: " + os.path.join(dir, file)
+        raise ValueError(msg2)
+
+    # astropy Tables try too hard here, dont have the control to only read a single column...
+    # so we're switching to Pandas for this step!
+    # henear_tbl = Table.read(file, names=('wave', 'name'), format='ascii')
+    # henear_tbl['wave'].unit = u.AA
+    # arc = henear_tbl['wave']
+    df = pd.read_table(os.path.join(dir, file), usecols=(0,), names=('wave',),
+                       delim_whitespace=True, comment='#')
+    arc = df['wave'].values # * u.angstrom
+    return arc
+
+
+def identify_nearest(arcspec, wapprox=None, linelist=None, linewave=None,
+                     autotol=25, silent=False):
     ''' '''
+
+    if linelist is not None:
+        linewave = loadlinelist(linelist)
 
     if linewave is None:
         msg_fail = '''

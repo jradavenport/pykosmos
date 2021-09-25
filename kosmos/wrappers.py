@@ -12,7 +12,10 @@ from astropy import units as u
 # __all__ = ['autoreduce', 'CoAddFinal', 'ReduceCoAdd', 'ReduceTwo']
 
 def script_reduce(script,
-                  trim=True, Xfile = 'apoextinct.dat',
+                  trim=True,
+                  apwidth=10, skysep=5, skywidth=5,
+                  Xfile='apoextinct.dat',
+                  linelist='apohenear.dat',
                   display=False):
     """
     Wrapper function that carries out all aspects of simple spectral
@@ -58,46 +61,48 @@ def script_reduce(script,
 
     """
 
+    # read the reduction script - this drives everything!
     tbl = Table.read(script, format='csv', names=('file', 'type'))
 
-    # start things off w/ None, before stuff may be read...
+    # start calibration frames off w/ None...
     bias = None
     flat = None
     ilum = None
 
-    # The old IRAF-style linelists just have 2 col: (wavelength, line name)
-    henear_tbl = Table.read('../kosmos/resources/linelists/apohenear.dat',
-                            names=('wave', 'name'), format='ascii')
-    # IMPROVEMENT NEEDED: need to make `identify_nearest` point to these linelists itself?
-    henear_tbl['wave'].unit = u.angstrom
-    apo_henear = henear_tbl['wave']
-
+    # read the reference arcline list in
+    arclines = kosmos.loadlinelist(linelist)
     # airmass extinction file to use
-    Xfile = kosmos.obs_extinction(Xfile)
+    if Xfile is not None:
+        Xfile = kosmos.obs_extinction(Xfile)
 
     j = 0
     while j < len(tbl):
         # print(j, len(tbl) - 1, tbl['file'].data[j], tbl['type'].data[j])
 
         if (tbl['type'].data[j] == 'bias') | (tbl['type'].data[j] == 'flat'):
+            print('b/f')
             # bias or flat combine only runs if n>1 files.
             # if this isn't the last row in the script, look for more rows of same type
             if j < (len(tbl) - 1):
                 # find the next row that is NOT a bias or flat
-                nxt = np.where((tbl['type'][j:] != tbl['type'][j]))[0][0]
-
-                # how many consecutive bias files are there?
-                print(len(tbl['file'].data[j:(j + nxt)]))
+                nxt = np.where((tbl['type'][j:] != tbl['type'][j]))[0]
+                if len(nxt) > 0:
+                    nxtfile = nxt[0]
+                # if all remaining rows are the same type, grab all the rest
+                if len(nxt) == 0:
+                    nxtfile = len(tbl)-j
 
                 # handle biases vs flats
                 if (tbl['type'][j] == 'bias'):
-                    bias = kosmos.biascombine(tbl['file'].data[j:(j + nxt)])
+                    print('combining ' + str(len(tbl['file'].data[j:(j + nxtfile)])) + ' biases')
+                    bias = kosmos.biascombine(tbl['file'].data[j:(j + nxtfile)])
 
                 if (tbl['type'][j] == 'flat'):
-                    flat, ilum = kosmos.flatcombine(tbl['file'].data[j:(j + nxt)], bias=bias)
+                    print('combining ' + str(len(tbl['file'].data[j:(j + nxtfile)])) + ' flats')
+                    flat, ilum = kosmos.flatcombine(tbl['file'].data[j:(j + nxtfile)], bias=bias)
 
                 # set the counter to jump the run of biases
-                j = j + nxt - 1
+                j = j + nxtfile - 1
 
         if tbl['type'].data[j] == 'arc':
             print('loading arc image')
@@ -116,20 +121,19 @@ def script_reduce(script,
             img = kosmos.proc(tbl['file'].data[j], bias=bias, ilum=ilum, flat=flat, trim=trim)
             # trace/extract data
             trace = kosmos.trace(img, display=False, nbins=55)
-            sci_ex, sci_sky = kosmos.BoxcarExtract(img, trace, display=False,
-                                                   apwidth=10, skysep=5, skywidth=5)
+            sci_ex, sci_sky = kosmos.BoxcarExtract(img, trace, display=False, apwidth=apwidth, skysep=skysep, skywidth=skywidth)
             spectrum = sci_ex - sci_sky
 
             # EVERY frame is: traced, extracted from both the data & arc, and identified
 
             # wavelength solution
             # extract trace across the Arc lamp image
-            sciarc_ex, _ = kosmos.BoxcarExtract(arcimg, trace, apwidth=3, skysep=5, skywidth=5)
+            sciarc_ex, _ = kosmos.BoxcarExtract(arcimg, trace, apwidth=apwidth, skysep=skysep, skywidth=skywidth)
 
             wapprox = (np.arange(img.shape[1]) - img.shape[1] / 2)[::-1] * img.header['DISPDW'] + img.header['DISPWC']
             wapprox = wapprox * u.angstrom
 
-            sci_xpts, sci_wpts = kosmos.identify_nearest(sciarc_ex, wapprox=wapprox, linewave=apo_henear, autotol=5)
+            sci_xpts, sci_wpts = kosmos.identify_nearest(sciarc_ex, wapprox=wapprox, linewave=arclines, autotol=5)
             sci_fit = kosmos.fit_wavelength(spectrum, sci_xpts, sci_wpts, mode='interp', deg=3)
 
             # apply airmass calibration
@@ -139,24 +143,23 @@ def script_reduce(script,
 
             sci_fitX = kosmos.airmass_cor(sci_fit, sci_airmass, Xfile)
 
-        if tbl['type'].data[j][0:3] == 'std':
-            # import standard star
-            print('std')
-            standardstar = kosmos.onedstd(tbl['type'].data[j][4:])
-            # generate new sensitivity function
-            sensfunc = kosmos.standard_sensfunc(sci_fitX, standardstar, mode='linear', display=False)
+            if tbl['type'].data[j][0:3] == 'std':
+                # import standard star
+                print('std')
+                standardstar = kosmos.onedstd(tbl['type'].data[j][4:])
+                # generate new sensitivity function
+                sensfunc = kosmos.standard_sensfunc(sci_fitX, standardstar, mode='linear', display=False)
 
-        if tbl['type'].data[j] == 'object':
-            print('object')
-            # flux calibration, apply sensfunc
-            final_spectrum = kosmos.apply_sensfunc(sci_fitX, sensfunc)
+            if tbl['type'].data[j] == 'object':
+                print('object')
+                # flux calibration, apply sensfunc
+                final_spectrum = kosmos.apply_sensfunc(sci_fitX, sensfunc)
 
-            plt.figure(figsize=(9, 4))
-            plt.plot(final_spectrum.wavelength, final_spectrum.flux, c='k', label='New reduction')
-            plt.xlabel('Wavelength [' + str(final_spectrum.wavelength.unit) + ']')
-            plt.ylabel('Flux [' + str(final_spectrum.flux.unit) + ']')
+                plt.figure(figsize=(9, 4))
+                plt.plot(final_spectrum.wavelength, final_spectrum.flux, c='k', label='New reduction')
+                plt.xlabel('Wavelength [' + str(final_spectrum.wavelength.unit) + ']')
+                plt.ylabel('Flux [' + str(final_spectrum.flux.unit) + ']')
 
         j += 1
 
     return
-
