@@ -136,7 +136,7 @@ def trace(img, nbins=20, guess=None, window=None, display=False):
 
     for i in range(0, len(xbins)-1):
         # fit gaussian within each window
-        zi = np.nansum(img.data[:, xbins[i]:xbins[i+1]], axis=Waxis)
+        zi = np.nansum(img.data[ilum2, xbins[i]:xbins[i+1]], axis=Waxis)
         peak_y = ilum2[np.nanargmax(zi)]
         width_guess = np.size(ilum2[zi > (np.nanmax(zi) / 2.)]) / 2.355
         if width_guess < 2.:
@@ -319,3 +319,8 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
                          )
 
     return spec, skyspec
+
+# work on a new extract that first de-warps the wavelength along the spatial axis...
+#    and maybe does something more PSF-like in the extraction
+
+# need to add "optimal extraction" method for weighting data vs sky
