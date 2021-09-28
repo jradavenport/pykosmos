@@ -171,7 +171,7 @@ def onedstd(stdstar):
 
 
 def standard_sensfunc(object_spectrum, standard, mode='spline', polydeg=9,
-                      badlines=[6563, 4861, 4341], display=False):
+                      badlines=None, display=False):
     """
     Compute the standard star sensitivity function. First down-samples the
     observed standard star spectrum to the reference spectrum, then computes
@@ -206,6 +206,8 @@ def standard_sensfunc(object_spectrum, standard, mode='spline', polydeg=9,
     obj_wave, obj_flux = object_spectrum.wavelength, object_spectrum.flux
 
     # Automatically exclude some lines b/c resolution dependent response
+    if badlines is None:
+        badlines = [4341, 4861, 6563]
     badlines = np.array(badlines, dtype='float') # Balmer lines
 
     # down-sample (ds) the observed flux to the standard's bins
@@ -214,6 +216,7 @@ def standard_sensfunc(object_spectrum, standard, mode='spline', polydeg=9,
     obj_wave_ds = np.array([], dtype=np.float)
     std_flux_ds = np.array([], dtype=np.float)
     for i in range(len(standard['flux'])):
+        # IMPROVEMENT: this could be done faster/better w/o using np.where...
         rng = np.where((obj_wave.value >= standard['wave'][i] - standard['width'][i] / 2.0) &
                        (obj_wave.value < standard['wave'][i] + standard['width'][i] / 2.0))[0]
 
