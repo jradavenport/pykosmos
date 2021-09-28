@@ -14,9 +14,12 @@ from astropy import units as u
 def script_reduce(script,
                   trim=True,
                   apwidth=10, skysep=5, skywidth=5,
+                  trace_nbins=15, trace_guess=None, trace_window=None,
+                  stdtrace=False,
                   Xfile='apoextinct.dat',
                   linelist='apohenear.dat',
-                  display=False):
+                  waveapprox=False,
+                  display=False, debug=False, silencewarnings=False):
     """
     Wrapper function that carries out all aspects of simple spectral
     reduction, according to a script. Here the script file is analogous to
@@ -61,6 +64,15 @@ def script_reduce(script,
 
     """
 
+
+    if silencewarnings is True:
+        # i hate doing this, but wcs/fits gives SO many warnings for our images...
+        import warnings
+        from astropy.io.fits.verify import VerifyWarning
+        warnings.simplefilter('ignore', category=VerifyWarning)
+        from astropy.wcs import FITSFixedWarning
+        warnings.simplefilter('ignore', category=FITSFixedWarning)
+
     # read the reduction script - this drives everything!
     tbl = Table.read(script, format='csv', names=('file', 'type'))
 
@@ -68,9 +80,12 @@ def script_reduce(script,
     bias = None
     flat = None
     ilum = None
+    fallbacktrace=None
 
     # read the reference arcline list in
-    arclines = kosmos.loadlinelist(linelist)
+    if linelist is not None:
+        arclines = kosmos.loadlinelist(linelist)
+
     # airmass extinction file to use
     if Xfile is not None:
         Xfile = kosmos.obs_extinction(Xfile)
@@ -80,7 +95,9 @@ def script_reduce(script,
         # print(j, len(tbl) - 1, tbl['file'].data[j], tbl['type'].data[j])
 
         if (tbl['type'].data[j] == 'bias') | (tbl['type'].data[j] == 'flat'):
-            print('b/f')
+            if debug:
+                print(tbl['file'].data[j], tbl['type'].data[j], ' bias/flat')
+
             # bias or flat combine only runs if n>1 files.
             # if this isn't the last row in the script, look for more rows of same type
             if j < (len(tbl) - 1):
@@ -99,66 +116,94 @@ def script_reduce(script,
 
                 if (tbl['type'][j] == 'flat'):
                     print('combining ' + str(len(tbl['file'].data[j:(j + nxtfile)])) + ' flats')
-                    flat, ilum = kosmos.flatcombine(tbl['file'].data[j:(j + nxtfile)], bias=bias)
+                    flat, ilum = kosmos.flatcombine(tbl['file'].data[j:(j + nxtfile)], bias=bias, trim=trim)
 
                 # set the counter to jump the run of biases
                 j = j + nxtfile - 1
 
         if tbl['type'].data[j] == 'arc':
-            print('loading arc image')
+            if debug:
+                print(tbl['file'].data[j], ' arc')
             # there's going to be some tedious logic here if things arent
             # defined "in order", or are missing for an object reduction...
             # => start w/ the "right" order first, build fall-backs second
 
-            arcimg = kosmos.proc(tbl['file'].data[j], bias=bias, ilum=ilum, trim=True)
+            arcimg = kosmos.proc(tbl['file'].data[j], bias=bias, ilum=ilum, trim=trim)
             # if trace is defined use that, otherwise use flat cut
 
         # for standard OR object files
         if (tbl['type'].data[j][0:3] == 'std') | (tbl['type'].data[j] == 'object'):
             # reduce image
-            print('loading file')
+            if debug:
+                print(tbl['file'].data[j], ' std/object')
 
             img = kosmos.proc(tbl['file'].data[j], bias=bias, ilum=ilum, flat=flat, trim=trim)
+
             # trace/extract data
-            trace = kosmos.trace(img, display=False, nbins=55)
-            sci_ex, sci_sky = kosmos.BoxcarExtract(img, trace, display=False, apwidth=apwidth, skysep=skysep, skywidth=skywidth)
+            if (fallbacktrace is not None) and (stdtrace is True) and (tbl['type'].data[j] == 'object'):
+                if debug:
+                    print('using previous std trace')
+                trace = fallbacktrace
+            else:
+                trace = kosmos.trace(img, display=display, nbins=trace_nbins,
+                                     guess=trace_guess, window=trace_window)
+
+            sci_ex, sci_sky = kosmos.BoxcarExtract(img, trace, apwidth=apwidth,
+                                                   skysep=skysep, skywidth=skywidth)
             spectrum = sci_ex - sci_sky
 
             # EVERY frame is: traced, extracted from both the data & arc, and identified
 
             # wavelength solution
             # extract trace across the Arc lamp image
-            sciarc_ex, _ = kosmos.BoxcarExtract(arcimg, trace, apwidth=apwidth, skysep=skysep, skywidth=skywidth)
+            sciarc_ex, _ = kosmos.BoxcarExtract(arcimg, trace, apwidth=apwidth,
+                                                skysep=skysep, skywidth=skywidth)
 
             wapprox = (np.arange(img.shape[1]) - img.shape[1] / 2)[::-1] * img.header['DISPDW'] + img.header['DISPWC']
             wapprox = wapprox * u.angstrom
 
-            sci_xpts, sci_wpts = kosmos.identify_nearest(sciarc_ex, wapprox=wapprox, linewave=arclines, autotol=5)
-            sci_fit = kosmos.fit_wavelength(spectrum, sci_xpts, sci_wpts, mode='interp', deg=3)
+            # just use the header-based approximate wavelength? (usually not great)
+            if waveapprox:
+                sci_fit = kosmos.fit_wavelength(spectrum, np.arange((len(wapprox))), wapprox,
+                                                mode='poly', deg=1)
+            else:
+                sci_xpts, sci_wpts = kosmos.identify_nearest(sciarc_ex, wapprox=wapprox,
+                                                             linewave=arclines, autotol=5)
+                sci_fit = kosmos.fit_wavelength(spectrum, sci_xpts, sci_wpts, mode='interp', deg=3)
 
             # apply airmass calibration
-            # Select the observatory-specific airmass extinction profile from the provided "extinction" library
-            ZD = img.header['ZD'] / 180.0 * np.pi
-            sci_airmass = 1.0 / np.cos(ZD)  # approximate Zenith Distance -> Airmass conversion
-
-            sci_fitX = kosmos.airmass_cor(sci_fit, sci_airmass, Xfile)
+            if Xfile is not None:
+                ZD = img.header['ZD'] / 180.0 * np.pi
+                sci_airmass = 1.0 / np.cos(ZD)  # approximate Zenith Distance -> Airmass conversion
+                sci_fit = kosmos.airmass_cor(sci_fit, sci_airmass, Xfile)
 
             if tbl['type'].data[j][0:3] == 'std':
                 # import standard star
-                print('std')
+                if debug:
+                    print(tbl['file'].data[j], ' std ', tbl['type'].data[j][4:])
+                if stdtrace is True:
+                    if debug:
+                        print('saving std trace')
+                    fallbacktrace = trace
                 standardstar = kosmos.onedstd(tbl['type'].data[j][4:])
                 # generate new sensitivity function
-                sensfunc = kosmos.standard_sensfunc(sci_fitX, standardstar, mode='linear', display=False)
+                sensfunc = kosmos.standard_sensfunc(sci_fit, standardstar,
+                                                    mode='linear', display=display)
 
             if tbl['type'].data[j] == 'object':
-                print('object')
+                if debug:
+                    print(tbl['file'].data[j], ' object')
+
                 # flux calibration, apply sensfunc
-                final_spectrum = kosmos.apply_sensfunc(sci_fitX, sensfunc)
+                final_spectrum = kosmos.apply_sensfunc(sci_fit, sensfunc)
 
                 plt.figure(figsize=(9, 4))
                 plt.plot(final_spectrum.wavelength, final_spectrum.flux, c='k', label='New reduction')
                 plt.xlabel('Wavelength [' + str(final_spectrum.wavelength.unit) + ']')
                 plt.ylabel('Flux [' + str(final_spectrum.flux.unit) + ']')
+
+                # write log file
+                # save 1D spectrum as some kind of ascii table
 
         j += 1
 
