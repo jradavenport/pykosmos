@@ -53,7 +53,7 @@ def _gaus(x, a, b, x0, sigma):
 
 
 def trace(img, nbins=20, guess=None, window=None, 
-          Waxis=1, display=False):
+          Saxis=0, Waxis=1, display=False):
     """
     Trace the spectrum aperture in an image
 
@@ -80,6 +80,15 @@ def trace(img, nbins=20, guess=None, window=None,
         potentially bad if the trace is substantially bent or warped.
     display : bool, optional
         If set to true display the trace over-plotted on the image
+    Saxis : int, optional
+        Set which axis is the spatial dimension. For DIS, Saxis=0
+        (corresponds to NAXIS2 in header). For KOSMOS, Saxis=1.
+        (Default is 0)
+    Waxis : int, optional
+        Set which axis is the wavelength dimension. For DIS, Waxis=1
+        (corresponds to NAXIS1 in the header). For KOSMOS, Waxis=0.
+        (Default is 1)
+        NOTE: if Saxis is changed, Waxis will be updated, and visa versa.
 
     Returns
     -------
@@ -102,6 +111,13 @@ def trace(img, nbins=20, guess=None, window=None,
     # Require at least 4 big bins along the trace to define shape. Sometimes can get away with very few
     if (nbins < 4):
         raise ValueError('nbins must be >= 4')
+
+    # old DIS default was Saxis=0, Waxis=1, shape = (1028,2048)
+    # KOSMOS is swapped, shape = (4096, 2148)
+    if (Saxis == 1) | (Waxis == 0):
+        # if either axis is swapped, swap them both to be sure!
+        Saxis = 1
+        Waxis = 0
 
     # Pick the highest peak, bad if mult. obj. on slit...
     ztot = np.nansum(img, axis=Waxis).data / img.shape[Waxis]  # average image data across all wavelengths
@@ -205,13 +221,10 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
     1. Extract the spectrum using the trace. Simply add up all the flux
     around the aperture within a specified +/- width.
 
-    Note: implicitly assumes wavelength axis is perfectly vertical within
-    the trace. An major simplification at present. To be changed!
+    Note: implicitly assumes wavelength axis is perpendicular to
+    the trace.
 
     2. Fits a polynomial to the sky at each column
-
-    Note: implicitly assumes wavelength axis is perfectly vertical within
-    the trace. A limiting simplification!
 
     3. Computes the uncertainty in each pixel
 
@@ -235,6 +248,15 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
     skydeg : int, optional
         The polynomial order to fit between the sky windows.
         (Default is 0)
+    Saxis : int, optional
+        Set which axis is the spatial dimension. For DIS, Saxis=0
+        (corresponds to NAXIS2 in header). For KOSMOS, Saxis=1.
+        (Default is 0)
+    Waxis : int, optional
+        Set which axis is the wavelength dimension. For DIS, Waxis=1
+        (corresponds to NAXIS1 in the header). For KOSMOS, Waxis=0.
+        (Default is 1)
+        NOTE: if Saxis is changed, Waxis will be updated, and visa versa.
 
     Returns
     -------
@@ -254,7 +276,9 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
         "optimal" (variance weighted) extraction algorithm
     """
 
-    if (Saxis==1) | (Waxis==0):
+    # old DIS default was Saxis=0, Waxis=1, shape = (1028,2048)
+    # KOSMOS is swapped, shape = (4096, 2148)
+    if (Saxis == 1) | (Waxis == 0):
         # if either axis is swapped, swap them both to be sure!
         Saxis = 1
         Waxis = 0

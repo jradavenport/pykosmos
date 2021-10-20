@@ -41,7 +41,7 @@ def biascombine(bfiles):
 
 
 def proc(file, bias=None, flat=None, dark=None,
-         trim=True, ilum=None, Waxis=1,
+         trim=True, ilum=None, Saxis=0, Waxis=1,
          EXPTIME='EXPTIME', DATASEC='DATASEC'):
     """
     Semi-generalized function to read a FITS file in, divide by exposure
@@ -70,6 +70,15 @@ def proc(file, bias=None, flat=None, dark=None,
     DATASEC : string (optional, default='DATASEC')
         FITS header field containing the data section of the CCD, i.e. to
         remove the bias section. Used if `trim=True`
+    Saxis : int, optional
+        Set which axis is the spatial dimension. For DIS, Saxis=0
+        (corresponds to NAXIS2 in header). For KOSMOS, Saxis=1.
+        (Default is 0)
+    Waxis : int, optional
+        Set which axis is the wavelength dimension. For DIS, Waxis=1
+        (corresponds to NAXIS1 in the header). For KOSMOS, Waxis=0.
+        (Default is 1)
+        NOTE: if Saxis is changed, Waxis will be updated, and visa versa.
 
     Returns
     -------
@@ -92,6 +101,13 @@ def proc(file, bias=None, flat=None, dark=None,
     # trim off bias section
     if trim:
         img = trim_image(img, fits_section=img.header[DATASEC])
+
+    # old DIS default was Saxis=0, Waxis=1, shape = (1028,2048)
+    # KOSMOS is swapped, shape = (4096, 2148)
+    if (Saxis == 1) | (Waxis == 0):
+        # if either axis is swapped, swap them both to be sure!
+        Saxis = 1
+        Waxis = 0
 
     # trim to illuminated region of CCD
     if ilum is None:

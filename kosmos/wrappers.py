@@ -19,6 +19,7 @@ def script_reduce(script,
                   Xfile='apoextinct.dat',
                   linelist='apohenear.dat',
                   waveapprox=False,
+                  Saxis=0, Waxis=1,
                   display=False, debug=False, silencewarnings=False):
     """
     Wrapper function that carries out all aspects of simple spectral
@@ -82,11 +83,19 @@ def script_reduce(script,
     ilum = None
     fallbacktrace=None
 
+    # old DIS default was Saxis=0, Waxis=1, shape = (1028,2048)
+    # KOSMOS is swapped, shape = (4096, 2148)
+    if (Saxis == 1) | (Waxis == 0):
+        # if either axis is swapped, swap them both to be sure!
+        Saxis = 1
+        Waxis = 0
+
     # read the reference arcline list in
+    # NEED TO STUDY HOW THIS WORKS WITH KOSMOS...
     if linelist is not None:
         arclines = kosmos.loadlinelist(linelist)
 
-    # airmass extinction file to use
+    # airmass observatory extinction file to use
     if Xfile is not None:
         Xfile = kosmos.obs_extinction(Xfile)
 
@@ -116,7 +125,8 @@ def script_reduce(script,
 
                 if (tbl['type'][j] == 'flat'):
                     print('combining ' + str(len(tbl['file'].data[j:(j + nxtfile)])) + ' flats')
-                    flat, ilum = kosmos.flatcombine(tbl['file'].data[j:(j + nxtfile)], bias=bias, trim=trim)
+                    flat, ilum = kosmos.flatcombine(tbl['file'].data[j:(j + nxtfile)], bias=bias,
+                                                    trim=trim, Waxis=Waxis, Saxis=Saxis)
 
                 # set the counter to jump the run of biases
                 j = j + nxtfile - 1
@@ -128,7 +138,8 @@ def script_reduce(script,
             # defined "in order", or are missing for an object reduction...
             # => start w/ the "right" order first, build fall-backs second
 
-            arcimg = kosmos.proc(tbl['file'].data[j], bias=bias, ilum=ilum, trim=trim)
+            arcimg = kosmos.proc(tbl['file'].data[j], bias=bias, ilum=ilum,
+                                 trim=trim, Waxis=Waxis, Saxis=Saxis)
             # if trace is defined use that, otherwise use flat cut
 
         # for standard OR object files
@@ -137,7 +148,8 @@ def script_reduce(script,
             if debug:
                 print(tbl['file'].data[j], ' std/object')
 
-            img = kosmos.proc(tbl['file'].data[j], bias=bias, ilum=ilum, flat=flat, trim=trim)
+            img = kosmos.proc(tbl['file'].data[j], bias=bias, ilum=ilum, flat=flat,
+                              trim=trim, Waxis=Waxis, Saxis=Saxis)
 
             # trace/extract data
             if (fallbacktrace is not None) and (stdtrace is True) and (tbl['type'].data[j] == 'object'):
@@ -146,18 +158,17 @@ def script_reduce(script,
                 trace = fallbacktrace
             else:
                 trace = kosmos.trace(img, display=display, nbins=trace_nbins,
-                                     guess=trace_guess, window=trace_window)
+                                     guess=trace_guess, window=trace_window,
+                                     Waxis=Waxis, Saxis=Saxis)
 
-            sci_ex, sci_sky = kosmos.BoxcarExtract(img, trace, apwidth=apwidth,
-                                                   skysep=skysep, skywidth=skywidth)
+            sci_ex, sci_sky = kosmos.BoxcarExtract(img, trace, apwidth=apwidth, skysep=skysep, skywidth=skywidth, Waxis=Waxis, Saxis=Saxis)
             spectrum = sci_ex - sci_sky
 
             # EVERY frame is: traced, extracted from both the data & arc, and identified
 
             # wavelength solution
             # extract trace across the Arc lamp image
-            sciarc_ex, _ = kosmos.BoxcarExtract(arcimg, trace, apwidth=apwidth,
-                                                skysep=skysep, skywidth=skywidth)
+            sciarc_ex, _ = kosmos.BoxcarExtract(arcimg, trace, apwidth=apwidth, skysep=skysep, skywidth=skywidth, Waxis=Waxis, Saxis=Saxis)
 
             wapprox = (np.arange(img.shape[1]) - img.shape[1] / 2)[::-1] * img.header['DISPDW'] + img.header['DISPWC']
             wapprox = wapprox * u.angstrom

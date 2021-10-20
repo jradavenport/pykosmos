@@ -9,7 +9,7 @@ from astropy.nddata import CCDData
 __all__ = ['find_illum', 'flat_response', 'flatcombine']
 
 
-def find_illum(flat, threshold=0.9, Waxis=1):
+def find_illum(flat, threshold=0.9, Saxis=0, Waxis=1):
     """
     Use threshold to define the illuminated portion of the image.
 
@@ -19,13 +19,27 @@ def find_illum(flat, threshold=0.9, Waxis=1):
         An image, typically the median-combined flat
     threshold : float
         the fraction to clip to determine the illuminated portion (between 0 and 1)
+    Saxis : int, optional
+        Set which axis is the spatial dimension. For DIS, Saxis=0
+        (corresponds to NAXIS2 in header). For KOSMOS, Saxis=1.
+        (Default is 0)
+    Waxis : int, optional
+        Set which axis is the wavelength dimension. For DIS, Waxis=1
+        (corresponds to NAXIS1 in the header). For KOSMOS, Waxis=0.
+        (Default is 1)
+        NOTE: if Saxis is changed, Waxis will be updated, and visa versa.
 
     Returns
     -------
     ilum : numpy array
         the indicies along the spatial dimension that are illuminated
     """
-    # Saxis = 0 # spatial axis
+    # old DIS default was Saxis=0, Waxis=1, shape = (1028,2048)
+    # KOSMOS is swapped, shape = (4096, 2148)
+    if (Saxis == 1) | (Waxis == 0):
+        # if either axis is swapped, swap them both to be sure!
+        Saxis = 1
+        Waxis = 0
 
     # compress all wavelength for max S/N
     ycompress = np.nansum(flat, axis=Waxis)
@@ -35,7 +49,8 @@ def find_illum(flat, threshold=0.9, Waxis=1):
     return ilum
 
 
-def flat_response(medflat, smooth=False, npix=11, display=False, Saxis=0):
+def flat_response(medflat, smooth=False, npix=11, display=False,
+                  Saxis=0, Waxis=1):
     """
     Divide out the spatially-averaged spectrum response from the flat image.
     This is to remove the spectral response of the flatfield (e.g. Quartz) lamp.
@@ -56,13 +71,27 @@ def flat_response(medflat, smooth=False, npix=11, display=False, Saxis=0):
     npix : int (default=11)
         if `smooth=True`, how big of a boxcar smooth kernel should be used (in pixels)?
     display : bool (default=False)
+    Saxis : int, optional
+        Set which axis is the spatial dimension. For DIS, Saxis=0
+        (corresponds to NAXIS2 in header). For KOSMOS, Saxis=1.
+        (Default is 0)
+    Waxis : int, optional
+        Set which axis is the wavelength dimension. For DIS, Waxis=1
+        (corresponds to NAXIS1 in the header). For KOSMOS, Waxis=0.
+        (Default is 1)
+        NOTE: if Saxis is changed, Waxis will be updated, and visa versa.
 
     Returns
     -------
     flat : CCDData object
 
     """
-    # Saxis = 0  # spatial axis, a variable in case we want to generalize someday
+    # old DIS default was Saxis=0, Waxis=1, shape = (1028,2048)
+    # KOSMOS is swapped, shape = (4096, 2148)
+    if (Saxis == 1) | (Waxis == 0):
+        # if either axis is swapped, swap them both to be sure!
+        Saxis = 1
+        Waxis = 0
 
     # average the data together along the "spatial" axis
     flat_1d = np.nanmean(medflat, axis=Saxis)
@@ -147,6 +176,15 @@ def flatcombine(ffiles, bias=None, trim=True, normframe=True,
     DATASEC : string (optional, default='DATASEC')
         FITS header field containing the data section of the CCD, i.e. to
         remove the bias section. Used if `trim=True`
+    Saxis : int, optional
+        Set which axis is the spatial dimension. For DIS, Saxis=0
+        (corresponds to NAXIS2 in header). For KOSMOS, Saxis=1.
+        (Default is 0)
+    Waxis : int, optional
+        Set which axis is the wavelength dimension. For DIS, Waxis=1
+        (corresponds to NAXIS1 in the header). For KOSMOS, Waxis=0.
+        (Default is 1)
+        NOTE: if Saxis is changed, Waxis will be updated, and visa versa.
 
     Returns
     -------
@@ -158,30 +196,16 @@ def flatcombine(ffiles, bias=None, trim=True, normframe=True,
 
     """
 
+    # old DIS default was Saxis=0, Waxis=1, shape = (1028,2048)
+    # KOSMOS is swapped, shape = (4096, 2148)
+    if (Saxis == 1) | (Waxis == 0):
+        # if either axis is swapped, swap them both to be sure!
+        Saxis = 1
+        Waxis = 0
+
     flist = []
     # loop over all flat frames
     for k in range(len(ffiles)):
-        '''img = CCDData.read(ffiles[k], unit=u.adu)  # assume ADU is the unit
-
-        # subtract the bias, divide by exposure time, update units to ADU/s
-        # ISSUE: this is kinda sloppy way to handle the optional bias
-        if bias is None:
-            pass
-        else:
-            img.data = img.data - bias
-            # img = img.subtract(bias) # don't do this b/c it breaks header
-
-        # ISSUE: what if this keyword doesn't exist... need try/except?
-        img.data = img.data / img.header[EXPTIME]
-
-        # ISSUE: is this even needed for the flats? Should a flat have ADU/s units?
-        img.unit = img.unit / u.s
-
-        # trim off bias section
-        if trim:
-            img = trim_image(img, fits_section=img.header[DATASEC])'''
-
-        # replace all this above w/ a more generalized "proc" routine for images
         img = proc(ffiles[k], bias=bias, EXPTIME=EXPTIME, DATASEC=DATASEC, trim=trim)
 
         # normalize each flat frame by its median
