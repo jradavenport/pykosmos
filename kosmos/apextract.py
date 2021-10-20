@@ -52,7 +52,8 @@ def _gaus(x, a, b, x0, sigma):
     return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
 
 
-def trace(img, nbins=20, guess=None, window=None, display=False):
+def trace(img, nbins=20, guess=None, window=None, 
+          Waxis=1, display=False):
     """
     Trace the spectrum aperture in an image
 
@@ -97,8 +98,6 @@ def trace(img, nbins=20, guess=None, window=None, display=False):
 
     # define the wavelength & spatial axis, if we want to enable swapping programatically later
     # defined to agree with e.g.: img.shape => (1024, 2048) = (spatial, wavelength)
-    Waxis = 1 # wavelength axis
-    Saxis = 0 # spatial axis
 
     # Require at least 4 big bins along the trace to define shape. Sometimes can get away with very few
     if (nbins < 4):
@@ -136,9 +135,14 @@ def trace(img, nbins=20, guess=None, window=None, display=False):
 
     for i in range(0, len(xbins)-1):
         # fit gaussian within each window
-        zi = np.nansum(img.data[ilum2, xbins[i]:xbins[i+1]], axis=Waxis)
+        if Waxis==1:
+            zi = np.nansum(img.data[ilum2, xbins[i]:xbins[i+1]], axis=Waxis)
+        if Waxis==0:
+            zi = np.nansum(img.data[xbins[i]:xbins[i+1], ilum2], axis=Waxis)
+
         peak_y = ilum2[np.nanargmax(zi)]
         width_guess = np.size(ilum2[zi > (np.nanmax(zi) / 2.)]) / 2.355
+
         if width_guess < 2.:
             width_guess = 2.
         if width_guess > 25:
@@ -181,17 +185,21 @@ def trace(img, nbins=20, guess=None, window=None, display=False):
         plt.figure()
         plt.imshow(img, origin='lower', aspect='auto', cmap=plt.cm.Greys_r)
         plt.clim(np.percentile(img, (5, 98)))
-        plt.scatter(xbins, ybins, alpha=0.5)
-        plt.plot(mx, my)
+        if Waxis==1:
+            plt.scatter(xbins, ybins, alpha=0.5)
+            plt.plot(mx, my)
+        if Waxis==0:
+            plt.scatter(ybins, xbins, alpha=0.5)
+            plt.plot(my,mx)
         plt.show()
 
     return my
 
 
 def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
-                  display=False):
+                  Saxis=0, Waxis=1, display=False):
     """
-    **This is nearly identical to `specreduce.extract.BoxcarExtract`
+    **This is nearly identical to `specreduce.extract.BoxcarExtract`,
       because that was based on the same PyDIS source code as this**
 
     1. Extract the spectrum using the trace. Simply add up all the flux
@@ -246,6 +254,11 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
         "optimal" (variance weighted) extraction algorithm
     """
 
+    if (Saxis==1) | (Waxis==0):
+        # if either axis is swapped, swap them both to be sure!
+        Saxis = 1
+        Waxis = 0
+
     if apwidth < 1:
         raise ValueError('apwidth must be >= 1')
     if skysep < 1:
@@ -262,21 +275,27 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
         # juuuust in case the trace gets too close to an edge
         widthup = apwidth
         widthdn = apwidth
-        if (trace_line[i]+widthup > img.shape[0]):
-            widthup = img.shape[0]-trace_line[i] - 1
+        if (trace_line[i]+widthup > img.shape[Saxis]):
+            widthup = img.shape[Saxis]-trace_line[i] - 1
         if (trace_line[i]-widthdn < 0):
             widthdn = trace_line[i] - 1
 
         # simply add up the total flux around the trace_line +/- width
-        onedspec[i] = np.nansum(img.data[int(trace_line[i]-widthdn):int(trace_line[i]+widthup+1), i])
-        # onedspec[i] = img.data[int(trace_line[i] - widthdn):int(trace_line[i] + widthup + 1), i].sum()
+        if Saxis==0:
+            onedspec[i] = np.nansum(img.data[int(trace_line[i]-widthdn):int(trace_line[i]+widthup+1), i])
+        if Saxis==1:
+            onedspec[i] = np.nansum(img.data[i, int(trace_line[i] - widthdn):int(trace_line[i] + widthup + 1)])
 
         # now do the sky fit
         itrace_line = int(trace_line[i])
         y = np.append(np.arange(itrace_line-apwidth-skysep-skywidth, itrace_line-apwidth-skysep),
                       np.arange(itrace_line+apwidth+skysep+1, itrace_line+apwidth+skysep+skywidth+1))
 
-        z = img.data[y,i]
+        if Saxis==0:
+            z = img.data[y,i]
+        if Saxis==1:
+            z = img.data[i,y]
+
         if (skydeg>0):
             # fit a polynomial to the sky in this column
             pfit = np.polyfit(y,z,skydeg)
@@ -302,11 +321,21 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
         plt.imshow(img, origin='lower', aspect='auto', cmap=plt.cm.Greys_r)
         plt.clim(np.percentile(img, (5, 98)))
 
-        plt.plot(np.arange(len(trace_line)), trace_line, c='C0')
-        plt.fill_between(np.arange(len(trace_line)), trace_line + apwidth, trace_line-apwidth, color='C0', alpha=0.5)
-        plt.fill_between(np.arange(len(trace_line)), trace_line + apwidth + skysep, trace_line + apwidth + skysep + skywidth, color='C1', alpha=0.5)
-        plt.fill_between(np.arange(len(trace_line)), trace_line - apwidth - skysep, trace_line - apwidth - skysep - skywidth, color='C1', alpha=0.5)
-        plt.ylim(np.min(trace_line - (apwidth + skysep + skywidth)*2), np.max(trace_line + (apwidth + skysep + skywidth)*2))
+        if Saxis==0:
+            plt.plot(np.arange(len(trace_line)), trace_line, c='C0')
+            plt.fill_between(np.arange(len(trace_line)), trace_line + apwidth, trace_line-apwidth, color='C0', alpha=0.5)
+            plt.fill_between(np.arange(len(trace_line)), trace_line + apwidth + skysep, trace_line + apwidth + skysep + skywidth, color='C1', alpha=0.5)
+            plt.fill_between(np.arange(len(trace_line)), trace_line - apwidth - skysep, trace_line - apwidth - skysep - skywidth, color='C1', alpha=0.5)
+        if Saxis==1:
+            plt.plot(trace_line, np.arange(len(trace_line)), c='C0')
+            plt.plot(trace_line + apwidth, np.arange(len(trace_line)), c='C0', alpha=0.5)
+            plt.plot(trace_line - apwidth, np.arange(len(trace_line)), c='C0', alpha=0.5)
+            plt.plot(trace_line - apwidth - skysep - skywidth, np.arange(len(trace_line)), c='C1', alpha=0.5)
+            plt.plot(trace_line - apwidth - skysep, np.arange(len(trace_line)), c='C1', alpha=0.5)
+            plt.plot(trace_line + apwidth + skysep + skywidth, np.arange(len(trace_line)), c='C1', alpha=0.5)
+            plt.plot(trace_line + apwidth + skysep, np.arange(len(trace_line)), c='C1', alpha=0.5)
+
+        # plt.ylim(np.min(trace_line - (apwidth + skysep + skywidth)*2), np.max(trace_line + (apwidth + skysep + skywidth)*2))
         # plt.show()
 
 

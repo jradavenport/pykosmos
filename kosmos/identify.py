@@ -206,7 +206,9 @@ def identify_nearest(arcspec, wapprox=None, linelist=None, linewave=None,
             # start guessing new wavelength model after first few lines identified
             if (len(wpoints) > 4):
                 xps = np.argsort(xpoints)
-                spl = UnivariateSpline(xpoints[xps], wpoints[xps], ext=0, k=3, s=1e3)
+                # spl = UnivariateSpline(xpoints[xps], wpoints[xps], ext=0, k=3, s=1e3)
+                # wcent_guess = spl(pcent_pix)
+                spl = interp1d(xpoints[xps], wpoints[xps], kind=1, fill_value='extrapolate')
                 wcent_guess = spl(pcent_pix)
 
     inrng = sum((linewave >= np.nanmin(wcent_guess)) & (linewave <= np.nanmax(wcent_guess)))
@@ -334,7 +336,7 @@ def identify_widget(arcspec, silent=False):
     return xpxl, waves
 
 
-def identify_dtw(arc, ref, display=False, upsample=True, Ufactor=5,
+def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
                  step_pattern='symmetric1',
                  open_begin=False, open_end=False,
                  peak_spline=True, pthreshold=0.95):
@@ -362,6 +364,7 @@ def identify_dtw(arc, ref, display=False, upsample=True, Ufactor=5,
     upsample : bool (default=True)
         do the DTW on an up-sampled version of the observed arc and reference
         spectra using a gaussian smooth. Linearlly down-sample result.
+        WARNING: doesn't like backwards wavelength axis for either arc or ref...
     Ufactor : int (default=5)
         the factor to up-sample both the ref and arc spectra by.
         UPGRADE IDEA: up-sample the arc and ref by different factors?
@@ -374,6 +377,7 @@ def identify_dtw(arc, ref, display=False, upsample=True, Ufactor=5,
         mode essentially uses DTW to do peak-wavelength identification.
         If you don't like the spline default, set to False and do your
         own interpolation of the line wavelengths.
+        NEED TO UPDATE DESCRIPTION HERE... RETURNS ONLY PEAKS, LIKE OTHER IDENTIFY MODES!
     pthreshold : float (default=0.95)
         Number between 0 and 1, the threshold to use in defining
         "peaks" in the spectrum if `peak_spline=True`.
@@ -382,9 +386,9 @@ def identify_dtw(arc, ref, display=False, upsample=True, Ufactor=5,
 
     Returns
     -------
-    spec : Spectrum1D object
-        The same spectrum as the arc-lamp input, but swapping the
-        pixel to wavelength axis
+    The pixel locations and wavelengths of the identified features
+    (lines or the whole spectrum):
+    pixel, wavelength
     """
 
     # use Dynamic Time Warping!
@@ -443,41 +447,86 @@ def identify_dtw(arc, ref, display=False, upsample=True, Ufactor=5,
         plt.xlabel(arc.spectral_axis.unit)
         plt.ylabel(ref.spectral_axis.unit)
 
-    # return a Spectrum1D object, but switch to the new spectral axis
-    # spec = Spectrum1D(spectral_axis=wav_guess * ref.spectral_axis.unit,
-    #                   flux=arc.flux,
-    #                   uncertainty=arc.uncertainty)
-
     # to fit w/ other "identify" methods, return (pixels, wavelength)
     xpoints, wpoints = arc.spectral_axis.value, wav_guess * ref.spectral_axis.unit
+
+    if peak_spline:
+        xpoints, wpoints = pks, wav_guess[pks] * ref.spectral_axis.unit
+
     return xpoints, wpoints
 
 
-def fit_wavelength(spec, xpoints, wpoints,
-                   mode='poly', deg=7):
+def fit_wavelength(spec, xpoints, wpoints, display=False,
+                   mode='poly', deg=7, GPRscale=101,
+                   returnpoints=False, returnvar=False):
     ''' '''
 
     # sort, just in case
     srt = np.argsort(xpoints)
-    xpt = xpoints[srt]
-    wpt = wpoints.value[srt]
+    xpt = np.array(xpoints)[srt]
+    wpt = np.array(wpoints.value)[srt]
+    fpt = np.zeros_like(xpt) # the fit wavelength points
 
     if mode.lower() == 'poly':
         fit = np.polyfit(xpt, wpt, deg)
         wavesolved = np.polyval(fit, spec.spectral_axis.value)
+        fpt = np.polyval(fit, xpt)
 
     if mode.lower() == 'spline':
         spl = UnivariateSpline(xpt, wpt, ext=0, k=3, s=1e3)
         wavesolved = spl(spec.spectral_axis.value)
+        fpt = spl(xpt)
 
     if mode.lower() == 'interp':
         spl = interp1d(xpt, wpt, kind=deg, fill_value='extrapolate')
         wavesolved = spl(spec.spectral_axis.value)
+        fpt = spl(xpt)
+
+    if mode.lower() == 'gp':
+        # assume 1/2 pixel precision of centering arc lines (prob better actually)
+        yerr = np.ones_like(xpt) * np.mean(np.abs(np.diff(spec.spectral_axis.value))) / 2
+
+        # follow BASIC tutorial from "george"
+        # https://george.readthedocs.io/en/latest/tutorials/first/
+        import george
+        from george import kernels
+        from scipy.optimize import minimize
+
+        # Rscale = 100 # the magic scale param... hopefully OK, YMMV
+        kernel = np.var(wpt) * kernels.ExpSquaredKernel(GPRscale)
+        gp = george.GP(kernel, fit_mean=True)
+        gp.compute(xpt, yerr)
+
+        def neg_ln_like(p):
+            gp.set_parameter_vector(p)
+            return -gp.log_likelihood(wpt)
+
+        def grad_neg_ln_like(p):
+            gp.set_parameter_vector(p)
+            return -gp.grad_log_likelihood(wpt)
+
+        result = minimize(neg_ln_like, gp.get_parameter_vector(), jac=grad_neg_ln_like, method='L-BFGS-B')
+        # print(result)
+        gp.set_parameter_vector(result.x)
+
+        wavesolved, wavesolved_var = gp.predict(wpt, spec.spectral_axis.value, return_var=True)
+        fpt = gp.predict(wpt, xpt, return_var=False)
+
+    if display:
+        plt.scatter(xpt, wpt - fpt)
+        plt.xlabel('Xpoints')
+        plt.ylabel('Residuals')
 
     outspec = Spectrum1D(spectral_axis=wavesolved * wpoints.unit,
                          flux=spec.flux,
                          uncertainty=spec.uncertainty
                          )
+    if returnpoints:
+        return fpt
+
+    if returnvar is True and mode.lower() == 'gp':
+        # beacuse there's no way to package uncertainty/varance w/ the Spectrum1D object currently
+        return outspec, wavesolved_var
 
     return outspec
 

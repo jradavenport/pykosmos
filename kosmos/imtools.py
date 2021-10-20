@@ -41,7 +41,7 @@ def biascombine(bfiles):
 
 
 def proc(file, bias=None, flat=None, dark=None,
-         trim=True, ilum=None,
+         trim=True, ilum=None, Waxis=1,
          EXPTIME='EXPTIME', DATASEC='DATASEC'):
     """
     Semi-generalized function to read a FITS file in, divide by exposure
@@ -100,7 +100,11 @@ def proc(file, bias=None, flat=None, dark=None,
         # img.data = img.data[ilum, :]
         # img = trim_image(img[ilum, :])
         # use continuous region, not array, to play nice w/ WCS slice
-        img = trim_image(img[ilum[0]:(ilum[-1]+1), :])
+        # img = trim_image(img[ilum[0]:(ilum[-1]+1), :])
+        if Waxis==1:
+            img = trim_image(img[ilum[0]:(ilum[-1]+1), :])
+        if Waxis==0:
+            img = trim_image(img[:, ilum[0]:(ilum[-1] + 1)])
 
     # divide out the flat
     if flat is None:

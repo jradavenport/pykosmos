@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 from astropy.convolution import convolve, Box1DKernel
 from ccdproc import Combiner, trim_image
 from .imtools import proc
+from astropy.nddata import CCDData
 # from astropy import units as u
-# from astropy.nddata import CCDData
 
 __all__ = ['find_illum', 'flat_response', 'flatcombine']
 
 
-def find_illum(flat, threshold=0.9):
+def find_illum(flat, threshold=0.9, Waxis=1):
     """
     Use threshold to define the illuminated portion of the image.
 
@@ -25,7 +25,6 @@ def find_illum(flat, threshold=0.9):
     ilum : numpy array
         the indicies along the spatial dimension that are illuminated
     """
-    Waxis = 1  # wavelength axis
     # Saxis = 0 # spatial axis
 
     # compress all wavelength for max S/N
@@ -36,7 +35,7 @@ def find_illum(flat, threshold=0.9):
     return ilum
 
 
-def flat_response(medflat, smooth=False, npix=11, display=False):
+def flat_response(medflat, smooth=False, npix=11, display=False, Saxis=0):
     """
     Divide out the spatially-averaged spectrum response from the flat image.
     This is to remove the spectral response of the flatfield (e.g. Quartz) lamp.
@@ -63,9 +62,7 @@ def flat_response(medflat, smooth=False, npix=11, display=False):
     flat : CCDData object
 
     """
-
-    # Waxis = 1 # wavelength axis
-    Saxis = 0  # spatial axis, a variable in case we want to generalize someday
+    # Saxis = 0  # spatial axis, a variable in case we want to generalize someday
 
     # average the data together along the "spatial" axis
     flat_1d = np.nanmean(medflat, axis=Saxis)
@@ -82,11 +79,20 @@ def flat_response(medflat, smooth=False, npix=11, display=False):
     # for i in range(medflat.shape[Saxis]):
     #     flat[i, :] = medflat[i, :] / flat_1d
     ## the new way w/ CCDdata objects... i hope!
-    flat = medflat.divide(flat_1d)
+    # flat = medflat.divide(flat_1d)
+    # NOPE, b/c CCDData divide doesn't like dividing arrays across the X-axis (works for Y-axis)
+
+    flat = np.zeros_like(medflat)
+    for i in range(flat.shape[Saxis]):
+        if Saxis == 0:
+            flat[i, :] = medflat[i, :].divide(flat_1d).data
+        if Saxis == 1:
+            flat[:, i] = medflat[:, i].divide(flat_1d).data
+    flat = CCDData(flat, unit=medflat.unit)
 
     # once again normalize, since (e.g. if haven't trimmed illumination region)
     # averaging could be skewed by including some non-illuminated portion.
-    flat = flat.divide(np.nanmedian(flat))
+    flat = flat.divide(np.nanmedian(flat.data))
 
     # the resulting flat should just show the pixel-to-pixel variations we're after
     if display:
@@ -102,6 +108,7 @@ def flat_response(medflat, smooth=False, npix=11, display=False):
 def flatcombine(ffiles, bias=None, trim=True, normframe=True,
                 illumcor=True, threshold=0.9,
                 responsecor=True, smooth=False, npix=11,
+                Saxis=0, Waxis=1,
                 EXPTIME='EXPTIME', DATASEC='DATASEC'  # header keywords
                 ):
     """
@@ -189,16 +196,20 @@ def flatcombine(ffiles, bias=None, trim=True, normframe=True,
 
     # should we use the median flat to detect the illuminated portion of the CCD?
     if illumcor:
-        ilum = find_illum(medflat, threshold=threshold)
+        ilum = find_illum(medflat, threshold=threshold, Waxis=Waxis)
 
         # if so, trim the median flat to only the illuminated portion
         # ISSUE: this hard-codes the wavelength vs spatial axes!
         # medflat = medflat[ilum, :]
         # use trim_image to make a proper copy
-        medflat = trim_image(medflat[ilum, :])
+        # use continuous region, not array, to play nice w/ WCS slice
+        if Waxis==1:
+            medflat = trim_image(medflat[ilum[0]:(ilum[-1] + 1), :])
+        if Waxis==0:
+            medflat = trim_image(medflat[:, ilum[0]:(ilum[-1] + 1)])
 
     if responsecor:
-        medflat = flat_response(medflat, smooth=smooth, npix=npix)
+        medflat = flat_response(medflat, smooth=smooth, npix=npix, Saxis=Saxis)
 
     if illumcor:
         return medflat, ilum
