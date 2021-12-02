@@ -109,7 +109,7 @@ def trace(img, nbins=20, guess=None, window=None,
     # defined to agree with e.g.: img.shape => (1024, 2048) = (spatial, wavelength)
 
     # Require at least 4 big bins along the trace to define shape. Sometimes can get away with very few
-    if (nbins < 4):
+    if nbins < 4:
         raise ValueError('nbins must be >= 4')
 
     # old DIS default was Saxis=0, Waxis=1, shape = (1028,2048)
@@ -120,7 +120,7 @@ def trace(img, nbins=20, guess=None, window=None,
         Waxis = 0
 
     # Pick the highest peak, bad if mult. obj. on slit...
-    ztot = np.nansum(img, axis=Waxis).data / img.shape[Waxis]  # average image data across all wavelengths
+    ztot = np.nansum(img.data, axis=Waxis) / img.shape[Waxis]  # average image data across all wavelengths
     peak_y = np.nanargmax(ztot)
     # if the user set a guess for where the peak was, adopt that
     if guess is not None:
@@ -151,9 +151,9 @@ def trace(img, nbins=20, guess=None, window=None,
 
     for i in range(0, len(xbins)-1):
         # fit gaussian within each window
-        if Waxis==1:
+        if Waxis == 1:
             zi = np.nansum(img.data[ilum2, xbins[i]:xbins[i+1]], axis=Waxis)
-        if Waxis==0:
+        if Waxis == 0:
             zi = np.nansum(img.data[xbins[i]:xbins[i+1], ilum2], axis=Waxis)
 
         peak_y = ilum2[np.nanargmax(zi)]
@@ -201,12 +201,12 @@ def trace(img, nbins=20, guess=None, window=None,
         plt.figure()
         plt.imshow(img, origin='lower', aspect='auto', cmap=plt.cm.Greys_r)
         plt.clim(np.percentile(img, (5, 98)))
-        if Waxis==1:
+        if Waxis == 1:
             plt.scatter(xbins, ybins, alpha=0.5)
             plt.plot(mx, my)
-        if Waxis==0:
+        if Waxis == 0:
             plt.scatter(ybins, xbins, alpha=0.5)
-            plt.plot(my,mx)
+            plt.plot(my, mx)
         plt.show()
 
     return my
@@ -315,25 +315,25 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
         y = np.append(np.arange(itrace_line-apwidth-skysep-skywidth, itrace_line-apwidth-skysep),
                       np.arange(itrace_line+apwidth+skysep+1, itrace_line+apwidth+skysep+skywidth+1))
 
-        if Saxis==0:
-            z = img.data[y,i]
-        if Saxis==1:
-            z = img.data[i,y]
+        if Saxis == 0:
+            z = img.data[y, i]
+        if Saxis == 1:
+            z = img.data[i, y]
 
-        if (skydeg>0):
+        if skydeg>0:
             # fit a polynomial to the sky in this column
-            pfit = np.polyfit(y,z,skydeg)
+            pfit = np.polyfit(y, z, skydeg)
             # define the aperture in this column
             ap = np.arange(trace_line[i]-apwidth, trace_line[i]+apwidth+1)
             # evaluate the polynomial across the aperture, and sum
             skysubflux[i] = np.nansum(np.polyval(pfit, ap))
-        elif (skydeg==0):
+        elif skydeg == 0:
             skysubflux[i] = np.nanmean(z)*(apwidth*2.0 + 1)
 
         # finally, compute the error in this pixel
-        sigB = np.nanstd(z) # stddev in the background data
-        N_B = np.float(len(y)) # number of bkgd pixels
-        N_A = apwidth * 2. + 1 # number of aperture pixels
+        sigB = np.nanstd(z)  # stddev in the background data
+        N_B = np.float(len(y))  # number of bkgd pixels
+        N_A = apwidth * 2. + 1  # number of aperture pixels
 
         # based on aperture phot err description by F. Masci, Caltech:
         # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
@@ -345,12 +345,12 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
         plt.imshow(img, origin='lower', aspect='auto', cmap=plt.cm.Greys_r)
         plt.clim(np.percentile(img, (5, 98)))
 
-        if Saxis==0:
+        if Saxis == 0:
             plt.plot(np.arange(len(trace_line)), trace_line, c='C0')
             plt.fill_between(np.arange(len(trace_line)), trace_line + apwidth, trace_line-apwidth, color='C0', alpha=0.5)
             plt.fill_between(np.arange(len(trace_line)), trace_line + apwidth + skysep, trace_line + apwidth + skysep + skywidth, color='C1', alpha=0.5)
             plt.fill_between(np.arange(len(trace_line)), trace_line - apwidth - skysep, trace_line - apwidth - skysep - skywidth, color='C1', alpha=0.5)
-        if Saxis==1:
+        if Saxis == 1:
             plt.plot(trace_line, np.arange(len(trace_line)), c='C0')
             plt.plot(trace_line + apwidth, np.arange(len(trace_line)), c='C0', alpha=0.5)
             plt.plot(trace_line - apwidth, np.arange(len(trace_line)), c='C0', alpha=0.5)
@@ -359,8 +359,7 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
             plt.plot(trace_line + apwidth + skysep + skywidth, np.arange(len(trace_line)), c='C1', alpha=0.5)
             plt.plot(trace_line + apwidth + skysep, np.arange(len(trace_line)), c='C1', alpha=0.5)
 
-        # plt.ylim(np.min(trace_line - (apwidth + skysep + skywidth)*2), np.max(trace_line + (apwidth + skysep + skywidth)*2))
-        # plt.show()
+        plt.show()
 
 
     spec = Spectrum1D(spectral_axis=np.arange(len(onedspec)) * u.pixel,

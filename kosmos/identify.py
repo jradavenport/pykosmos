@@ -17,17 +17,13 @@ from IPython.display import display
 from scipy.optimize import curve_fit
 from scipy.interpolate import UnivariateSpline, interp1d
 from specutils import Spectrum1D
-import dtw
 from specutils.manipulation import FluxConservingResampler, gaussian_smooth
 from specutils.utils.wcs_utils import air_to_vac as a2v
 import os
 import pandas as pd
-# from astropy import units as u
-# from astropy.table import Table
 
 __all__ = ['identify_widget', 'loadlinelist', 'identify_nearest',
            'identify_dtw', 'find_peaks', 'fit_wavelength', 'air_to_vac']
-
 
 def _gaus(x, a, b, x0, sigma):
     """
@@ -85,14 +81,15 @@ def find_peaks(wave, flux, pwidth=10, pthreshold=0.97, minsep=1):
 
     # find  individual peaks (separated by > 1 pixel)
     # this is horribly ugly code... but i think works
-    pk = high[1:][ ( (high[1:]-high[:-1]) > minsep ) ]
+    pk = high[1:][((high[1:]-high[:-1]) > minsep)]
 
     # offset from start/end of array by at least same # of pixels
     pk = pk[pk > pwidth]
     pk = pk[pk < (len(flux) - pwidth)]
 
     pcent_pix = np.zeros_like(pk, dtype='float')
-    wcent_pix = np.zeros_like(pk, dtype='float') # wtemp[pk]
+    wcent_pix = np.zeros_like(pk, dtype='float')
+
     # for each peak, fit a gaussian to find center
     for i in range(len(pk)):
         xi = wave[pk[i] - pwidth:pk[i] + pwidth]
@@ -100,8 +97,8 @@ def find_peaks(wave, flux, pwidth=10, pthreshold=0.97, minsep=1):
 
         pguess = (np.nanmax(yi), np.nanmedian(flux), float(np.nanargmax(yi)), 2.)
         try:
-            popt,pcov = curve_fit(_gaus, np.arange(len(xi), dtype='float'), yi,
-                                  p0=pguess)
+            popt, pcov = curve_fit(_gaus, np.arange(len(xi), dtype='float'),
+                                   yi, p0=pguess)
 
             # the gaussian center of the line in pixel units
             pcent_pix[i] = (pk[i]-pwidth) + popt[2]
@@ -119,7 +116,7 @@ def find_peaks(wave, flux, pwidth=10, pthreshold=0.97, minsep=1):
 
 
 def loadlinelist(file):
-    '''
+    """
     Load a list of arclamp lines from the supplied library of files in the
     directory: kosmos/resources/linelists.
 
@@ -134,7 +131,7 @@ def loadlinelist(file):
     Returns
     -------
     numpy array of arclines
-    '''
+    """
 
     dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                        'resources', 'linelists')
@@ -148,15 +145,47 @@ def loadlinelist(file):
     # henear_tbl = Table.read(file, names=('wave', 'name'), format='ascii')
     # henear_tbl['wave'].unit = u.AA
     # arc = henear_tbl['wave']
+
     df = pd.read_table(os.path.join(dir, file), usecols=(0,), names=('wave',),
                        delim_whitespace=True, comment='#')
-    arc = df['wave'].values # * u.angstrom
+    arc = df['wave'].values  # * u.angstrom
     return arc
 
 
 def identify_nearest(arcspec, wapprox=None, linelist=None, linewave=None,
                      autotol=25, silent=False):
-    ''' '''
+    """
+    Identify arc lines using a simple greedy "nearest neighbor" approach.
+    Requires an approximate wavelength solution (e.g. as provided by
+    image header keywords). Peaks are first detected in the 1d spectrum.
+    Starting from the center of the spectrum, the closest lines within a
+    tolerance are picked. A linear interpolation solution is iteratively
+    fit with each successive line added.
+
+    Parameters
+    ----------
+    arcspec : Spectrum1D
+        the 1d spectrum of the arc lamp to be fit.
+    wapprox : astropy Quantity, or None
+        the approximate wavelenth solution, as e.g. provided by the
+        image header. Must have sensible units, like Angstroms.
+        NOTE: If set to None, assumes the `arcspec` object has the
+        approximate wavelength axis.
+    linelist : str, optional
+        name of linelist to load, is passed to `loadlinelist()`
+    linewave : numpy array or None, optional
+        Optionally pass an array of arclines to fit, as returned by e.g.
+        `loadlinelist()`
+    autotol : int, optional (default is 25)
+        the tolerance in pixel units to allow nearest matches within.
+    silent : bool, optional (default is False)
+        suppress a few helpful summary messages
+
+    Returns
+    -------
+    xpoints, wpoints : the pixel and wavelength values of the
+        successfully identified lines.
+    """
 
     if linelist is not None:
         linewave = loadlinelist(linelist)
@@ -204,7 +233,7 @@ def identify_nearest(arcspec, wapprox=None, linelist=None, linewave=None,
             wpoints = np.append(wpoints, linewave[np.nanargmin(np.abs(wcent_guess[ss[i]] - linewave))])
 
             # start guessing new wavelength model after first few lines identified
-            if (len(wpoints) > 4):
+            if len(wpoints) > 4:
                 xps = np.argsort(xpoints)
                 # spl = UnivariateSpline(xpoints[xps], wpoints[xps], ext=0, k=3, s=1e3)
                 # wcent_guess = spl(pcent_pix)
@@ -237,20 +266,18 @@ def identify_widget(arcspec, silent=False):
 
     When finished, the output lines should usually be passed in a new Jupter
     notebook cell to `identify` for determining the wavelength solution:
-    >>>> xpl,wav = identify_widget(wapprox, flux) # doctest: +SKIP
-    >>>> new_wave = identify(wapprox, flux, identify_mode='lines', xpoints=xpl, wpoints=wav) # doctest: +SKIP
+    >>>> xpl,wav = identify_widget(arcspec) # doctest: +SKIP
+    >>>> fit_spec = fit_wavelength(obj_spec, xpl, wav) # doctest: +SKIP
 
     NOTE: Because of the widgets used, this is not well suited for inclusion in
     pipelines, and instead is ideal for interactive analysis.
 
     Parameters
     ----------
-    xpixels : `~numpy.ndarray`
-        Array of the pixel values along wavelength dimension of the trace.
-    flux : `~numpy.ndarray`
-        Array of the flux values along the trace. Must have same size as xpixels.
-    silent : bool
-        Set to True to silence the instruction print out each time. (Default: False)
+    arcspec : Spectrum1D
+        the 1d spectrum of the arc lamp to be fit.
+    silent : bool, optional (default is False)
+        Set to True to silence the instruction print out each time.
 
     Returns
     -------
@@ -300,7 +327,7 @@ def identify_widget(arcspec, silent=False):
     # Handle plot clicks
     def onplotclick(event):
         # try to fit a Gaussian in the REGION (rgn) near the click
-        rgn = np.where((np.abs(xpixels - event.xdata ) <= 5.))[0]
+        rgn = np.where((np.abs(xpixels - event.xdata) <= 5.))[0]
         try:
             sig_guess = 3.
             p0 = [np.nanmax(flux[rgn]), np.nanmedian(flux), event.xdata, sig_guess]
@@ -321,7 +348,7 @@ def identify_widget(arcspec, silent=False):
         print(xpxl, waves)
 
         ax.axvline(xval.value, lw=1, c='r', alpha=0.7)
-        return #xpxl, waves
+        return
 
     button.on_click(onbuttonclick)
 
@@ -393,11 +420,12 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
 
     # use Dynamic Time Warping!
     # https://doi.org/10.18637/jss.v031.i07
+    import dtw
 
     # IMPROVEMENT NEEDED: check that both spectra are sorted, FCR returns NaNs if not.
     # if not, sort them, and then return back in the original form
 
-    if upsample:
+    if upsample is True:
         FCR = FluxConservingResampler()
         spec1 = FCR(arc, np.linspace(arc.spectral_axis.value.min(),
                                      arc.spectral_axis.value.max(),
@@ -459,13 +487,59 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
 def fit_wavelength(spec, xpoints, wpoints, display=False,
                    mode='poly', deg=7, GPRscale=101,
                    returnpoints=False, returnvar=False):
-    ''' '''
+    """
+    Fit the wavelength solution from a series of (pixel, Wavelength)
+    datapoints, and apply it a spectrum
+
+    Parameters
+    ----------
+    spec : Spectrum1D
+        the object spectrum to have a new wavelength axis added
+    xpoints : array-like object
+        the pixel values of identified arcline features
+    wpoints : astropy Quantity
+        the corresponding wavelengths for the identiifed pixels.
+        NOTE: Must have sensible units like angstroms, which will be
+        applied to the resulting spectrum.
+    display : bool, optional (default is False)
+        should we plot the (pixel,wavelength) fit residuals?
+    mode : str, ['poly', 'spline', 'interp', 'gp']
+        which fitting mode should be used? (Default is 'poly')
+        Select between Polynomial, UnivariateSpline, Interpolation, and
+        a Gaussian Process (via `george`, using ExpSquaredKernel)
+    deg : int, optional (default is 7)
+        if mode='poly', set the polynomial degree to use
+        if mode='interp', set the interpolation degree (passed as
+        `kind=deg` to `interp1d()`).
+    GPRscale : int, optional (default is 101)
+        If mode='gp', the Rscale parameter to use with ExpSquaredKernel
+    returnpoints : bool, optional (default is False)
+        If set, return just the fit values corresponding to the input
+        (xpoints, wpoints)
+    returnvar : bool, optional (default is False)
+        If set and mode='gp', additionally return the variance on the
+        resulting wavelength axis
+
+    Returns
+    -------
+    outspec : Sepctrum1D object
+        the same input spectrum, but with the newly fit wavelength
+        axis added.
+
+    if returnvar=True, then return:
+    outspec, wavelength_variance
+
+    Improvements
+    ------------
+    should the fit and apply steps be separated?
+
+    """
 
     # sort, just in case
     srt = np.argsort(xpoints)
     xpt = np.array(xpoints)[srt]
     wpt = np.array(wpoints.value)[srt]
-    fpt = np.zeros_like(xpt) # the fit wavelength points
+    fpt = np.zeros_like(xpt)  # the fit wavelength points
 
     if mode.lower() == 'poly':
         fit = np.polyfit(xpt, wpt, deg)
@@ -525,14 +599,14 @@ def fit_wavelength(spec, xpoints, wpoints, display=False,
         return fpt
 
     if returnvar is True and mode.lower() == 'gp':
-        # beacuse there's no way to package uncertainty/varance w/ the Spectrum1D object currently
+        # since there's no way to package uncertainty/variance w/ the Spectrum1D object currently
         return outspec, wavesolved_var
 
     return outspec
 
 
 def air_to_vac(spec):
-    '''
+    """
     Simple wrapper for the `air_to_vac` calculation within `specutils.utils.wcs_utils`
 
     Parameters
@@ -543,7 +617,7 @@ def air_to_vac(spec):
     -------
     Spectrum1D object with spectral_axis converted from air to vaccum units
 
-    '''
+    """
     new_wave = a2v(spec.wavelength)
     outspec = Spectrum1D(spectral_axis=new_wave,
                          flux=spec.flux,

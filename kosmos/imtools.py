@@ -25,7 +25,6 @@ def biascombine(bfiles):
     Returns
     -------
     bias : CCDData object
-
     """
 
     blist = []
@@ -117,9 +116,9 @@ def proc(file, bias=None, flat=None, dark=None,
         # img = trim_image(img[ilum, :])
         # use continuous region, not array, to play nice w/ WCS slice
         # img = trim_image(img[ilum[0]:(ilum[-1]+1), :])
-        if Waxis==1:
+        if Waxis == 1:
             img = trim_image(img[ilum[0]:(ilum[-1]+1), :])
-        if Waxis==0:
+        if Waxis == 0:
             img = trim_image(img[:, ilum[0]:(ilum[-1] + 1)])
 
     # divide out the flat

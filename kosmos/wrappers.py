@@ -125,7 +125,6 @@ def script_reduce(script,
     - add other wavelenth solution methods (e.g. DTW based on Kosmos templates)
     - Output reduced spectra using different file types? (text file?)
     - enable jpeg save w/o display (faster/automatic)
-
     """
 
     if silencewarnings is True:

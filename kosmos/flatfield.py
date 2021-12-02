@@ -45,7 +45,7 @@ def find_illum(flat, threshold=0.9, Saxis=0, Waxis=1):
     ycompress = np.nansum(flat, axis=Waxis)
 
     # find rows (along spatial axis) with illumination above threshold
-    ilum = np.where( ((ycompress / np.nanmedian(ycompress)) >= threshold) )[0]
+    ilum = np.where(((ycompress / np.nanmedian(ycompress)) >= threshold))[0]
     return ilum
 
 
@@ -107,6 +107,7 @@ def flat_response(medflat, smooth=False, npix=11, display=False,
     # flat = np.zeros_like(medflat)
     # for i in range(medflat.shape[Saxis]):
     #     flat[i, :] = medflat[i, :] / flat_1d
+
     ## the new way w/ CCDdata objects... i hope!
     # flat = medflat.divide(flat_1d)
     # NOPE, b/c CCDData divide doesn't like dividing arrays across the X-axis (works for Y-axis)
@@ -127,7 +128,7 @@ def flat_response(medflat, smooth=False, npix=11, display=False,
     if display:
         plt.figure()
         plt.imshow(flat, origin='lower', aspect='auto', cmap=plt.cm.inferno)
-        cb = plt.colorbar()
+        plt.colorbar()
         plt.title('flat')
         plt.show()
 
@@ -227,9 +228,9 @@ def flatcombine(ffiles, bias=None, trim=True, normframe=True,
         # medflat = medflat[ilum, :]
         # use trim_image to make a proper copy
         # use continuous region, not array, to play nice w/ WCS slice
-        if Waxis==1:
+        if Waxis == 1:
             medflat = trim_image(medflat[ilum[0]:(ilum[-1] + 1), :])
-        if Waxis==0:
+        if Waxis == 0:
             medflat = trim_image(medflat[:, ilum[0]:(ilum[-1] + 1)])
 
     if responsecor:

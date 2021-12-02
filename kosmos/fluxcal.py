@@ -5,6 +5,7 @@ NOT EDITED FOR KOSMOS YET
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.table import Table
+from numpy import ndarray
 from scipy.interpolate import UnivariateSpline
 from astropy.constants import c as cc
 import astropy.units as u
@@ -17,7 +18,7 @@ __all__ = ['mag2flux', 'obs_extinction', 'airmass_cor', 'onedstd',
 
 
 def mag2flux(spec_in, zeropt=48.60):
-    '''
+    """
     Convert magnitudes to flux units. This is important for dealing with standards
     and files from IRAF, which are stored in AB mag units. To be clear, this converts
     to "PHOTFLAM" units in IRAF-speak. Assumes the common flux zeropoint used in IRAF
@@ -33,7 +34,7 @@ def mag2flux(spec_in, zeropt=48.60):
     Returns
     -------
     Spectrum1D object with ``flux`` now in flux units (erg/s/cm2/A)
-    '''
+    """
 
     lamb = spec_in.spectral_axis
     mag = spec_in.flux.value
@@ -50,7 +51,7 @@ def mag2flux(spec_in, zeropt=48.60):
 
 
 def obs_extinction(obs_file):
-    '''
+    """
     Load the observatory-specific airmass extinction file from the supplied library
     in the directory kosmos/resources/extinction
 
@@ -67,7 +68,7 @@ def obs_extinction(obs_file):
     -------
     Astropy Table with the observatory extinction data, columns have names
     (`wave`, `X`) and units of (Angstroms, Airmass)
-    '''
+    """
 
     if len(obs_file) == 0:
         raise ValueError('Must select an observatory extinction file.')
@@ -119,7 +120,7 @@ def airmass_cor(object_spectrum, airmass, Xfile):
 
 
 def onedstd(stdstar):
-    '''
+    """
     Load the one-dimensional standard star from the supplied library
     "onedstd", originally from IRAF. The provenance of these reference
     spectra are varied, and future work includes creating a uniform set.
@@ -140,7 +141,7 @@ def onedstd(stdstar):
     Returns
     -------
         astropy Table with onedstd data
-    '''
+    """
 
     std_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                            'resources', 'onedstds')
@@ -208,7 +209,7 @@ def standard_sensfunc(object_spectrum, standard, mode='spline', polydeg=9,
     # Automatically exclude some lines b/c resolution dependent response
     if badlines is None:
         badlines = [4341, 4861, 6563]
-    badlines = np.array(badlines, dtype='float') # Balmer lines
+    badlines = np.array(badlines, dtype='float')  # Balmer lines
 
     # down-sample (ds) the observed flux to the standard's bins
     # IMPROVEMENT: could this be done w/ `specutils.manipulation.FluxConservingResampler`?
@@ -242,12 +243,12 @@ def standard_sensfunc(object_spectrum, standard, mode='spline', polydeg=9,
         warnings.warn("WARNING: invalid mode set. Changing to default mode 'spline'")
 
     # interpolate the calibration (sensfunc) on to observed wavelength grid
-    if mode.lower()=='linear':
+    if mode.lower() == 'linear':
         sensfunc2 = np.interp(obj_wave.value, obj_wave_ds, LogSensfunc)
-    elif mode.lower()=='spline':
+    elif mode.lower() == 'spline':
         spl = UnivariateSpline(obj_wave_ds, LogSensfunc, ext=0, k=2 ,s=0.0025)
         sensfunc2 = spl(obj_wave.value)
-    elif mode.lower()=='poly':
+    elif mode.lower() == 'poly':
         fit = np.polyfit(obj_wave_ds, LogSensfunc, polydeg)
         sensfunc2 = np.polyval(fit, obj_wave.value)
 
@@ -272,7 +273,7 @@ def standard_sensfunc(object_spectrum, standard, mode='spline', polydeg=9,
 
 
 def apply_sensfunc(object_spectrum, sensfunc_spec):
-    '''
+    """
     Apply the derived sensitivity function, converts observed units (e.g. ADU/s)
     to physical units (e.g. erg/s/cm2/A).
 
@@ -283,12 +284,12 @@ def apply_sensfunc(object_spectrum, sensfunc_spec):
     ----------
     object_spectrum : Spectrum1D object
         the observed object spectrum to apply the sensfunc to
-    sensfunc : Spectrum1D object
+    sensfunc_spec : Spectrum1D object
         the output of `standard_sensfunc`
     Returns
     -------
     The sensfunc-corrected spectrum, a Spectrum1D object
-    '''
+    """
 
     obj_wave, obj_flux = object_spectrum.wavelength, object_spectrum.flux
 
