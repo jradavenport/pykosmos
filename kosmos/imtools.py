@@ -6,6 +6,7 @@ astropy tools for bias combining.
 from astropy.nddata import CCDData
 from ccdproc import Combiner, trim_image
 from astropy import units as u
+from ccdproc import cosmicray_lacosmic
 
 __all__ = ['biascombine', 'proc']
 
@@ -41,7 +42,8 @@ def biascombine(bfiles):
 
 def proc(file, bias=None, flat=None, dark=None,
          trim=True, ilum=None, Saxis=0, Waxis=1,
-         EXPTIME='EXPTIME', DATASEC='DATASEC'):
+         EXPTIME='EXPTIME', DATASEC='DATASEC',
+         CR=False, GAIN='GAIN', READNOISE='RDNOISE', CRsigclip=4.5):
     """
     Semi-generalized function to read a FITS file in, divide by exposure
     time (returns units of ADU/s), and optionally perform basic CCD
@@ -78,6 +80,17 @@ def proc(file, bias=None, flat=None, dark=None,
         (corresponds to NAXIS1 in the header). For KOSMOS, Waxis=0.
         (Default is 1)
         NOTE: if Saxis is changed, Waxis will be updated, and visa versa.
+    CR : bool (default=False)
+        If True, use the L.A. Cosmic routine to remove cosmic rays from
+        image before reducing.
+    GAIN : string (optional, default='GAIN')
+        FITS header field containing the Gain parameter, used by
+        L.A. Cosmic
+    READNOISE : string (optional, default='RDNOISE')
+        FITS header field containing the Read Noise parameter, used by
+        L.A. Cosmic
+    CRsigclip : int (optional, default=4.5)
+        sigma-clipping parameter passed to L.A. Cosmic
 
     Returns
     -------
@@ -85,6 +98,14 @@ def proc(file, bias=None, flat=None, dark=None,
     """
 
     img = CCDData.read(file, unit=u.adu)
+
+    # should we remove cosmic rays?
+    if CR:
+        # IMPROVEMENT IDEA: could we pass more parameters as kwargs?
+        # also, specify either header fields OR actual values?
+        img = cosmicray_lacosmic(img, gain=img.header[GAIN]*u.electron/u.edu,
+                                 readnoise=img.header[READNOISE] * u.electron,
+                                 sigclip=CRsigclip)
 
     # subtract the bias, divide by exposure time, update units to ADU/s
     if bias is None:
