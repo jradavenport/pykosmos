@@ -20,7 +20,7 @@ from scipy.interpolate import UnivariateSpline
 from specutils import Spectrum1D
 from astropy import units as u
 from astropy.nddata import StdDevUncertainty
-# from astropy.table import Table
+# from matplotlib.widgets import Cursor
 
 
 __all__ = ['trace', 'BoxcarExtract']
@@ -52,7 +52,7 @@ def _gaus(x, a, b, x0, sigma):
     return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
 
 
-def trace(img, nbins=20, guess=None, window=None, 
+def trace(img, nbins=20, guess=None, window=None,
           Saxis=0, Waxis=1, display=False):
     """
     Trace the spectrum aperture in an image
@@ -121,13 +121,17 @@ def trace(img, nbins=20, guess=None, window=None,
 
     # Pick the highest peak, bad if mult. obj. on slit...
     ztot = np.nansum(img.data, axis=Waxis) / img.shape[Waxis]  # average image data across all wavelengths
+    yy = np.arange(len(ztot))
     peak_y = np.nanargmax(ztot)
+
+    # if interact:
+    #     guess = ap_interac(yy, ztot)
+
     # if the user set a guess for where the peak was, adopt that
     if guess is not None:
         peak_y = guess
 
     # guess the peak width as the FWHM, roughly converted to gaussian sigma
-    yy = np.arange(len(ztot))
     width_guess = np.size(yy[ztot > (np.nanmax(ztot)/2.)]) / 2.355
     # enforce some (maybe sensible?) rules about trace peak width
     if width_guess < 2.:
