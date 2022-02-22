@@ -91,6 +91,9 @@ def proc(file, bias=None, flat=None, dark=None,
         L.A. Cosmic
     CRsigclip : int (optional, default=4.5)
         sigma-clipping parameter passed to L.A. Cosmic
+    gain_apply : bool (optional, default=False)
+        apply gain to image. If this is set to true and the bias or flat are not 
+        in units of electrons per adu this may result in an error
 
     Returns
     -------
@@ -105,7 +108,7 @@ def proc(file, bias=None, flat=None, dark=None,
         # also, specify either header fields OR actual values?
         img = cosmicray_lacosmic(img, gain=img.header[GAIN]*u.electron/u.adu,
                                  readnoise=img.header[READNOISE] * u.electron,
-                                 sigclip=CRsigclip)
+                                 sigclip=CRsigclip, gain_apply=False)
 
     # subtract the bias, divide by exposure time, update units to ADU/s
     if bias is None:
