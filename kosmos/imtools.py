@@ -103,7 +103,7 @@ def proc(file, bias=None, flat=None, dark=None,
     if CR:
         # IMPROVEMENT IDEA: could we pass more parameters as kwargs?
         # also, specify either header fields OR actual values?
-        img = cosmicray_lacosmic(img, gain=img.header[GAIN]*u.electron/u.edu,
+        img = cosmicray_lacosmic(img, gain=img.header[GAIN]*u.electron/u.adu,
                                  readnoise=img.header[READNOISE] * u.electron,
                                  sigclip=CRsigclip)
 
