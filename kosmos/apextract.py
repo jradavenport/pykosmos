@@ -53,7 +53,7 @@ def _gaus(x, a, b, x0, sigma):
 
 
 def trace(img, nbins=20, guess=None, window=None,
-          Saxis=0, Waxis=1, display=False):
+          Saxis=0, Waxis=1, display=False, ax=None):
     """
     Trace the spectrum aperture in an image
 
@@ -89,6 +89,9 @@ def trace(img, nbins=20, guess=None, window=None,
         (corresponds to NAXIS1 in the header). For KOSMOS, Waxis=0.
         (Default is 1)
         NOTE: if Saxis is changed, Waxis will be updated, and visa versa.
+    ax : matplotlib axes or subplot object, optional
+        axes or subplot to be plotted onto. If not specified one will be 
+        created. (Default is None)
 
     Returns
     -------
@@ -202,22 +205,23 @@ def trace(img, nbins=20, guess=None, window=None,
         warnings.warn("TRACE ERROR: No Valid points found in trace")
 
     if display is True:
-        plt.figure()
-        plt.imshow(img, origin='lower', aspect='auto', cmap=plt.cm.Greys_r)
-        plt.clim(np.percentile(img, (5, 98)))
+        if ax is None:
+            fig, ax = plt.subplots(1,1)
+        im = ax.imshow(img, origin='lower', aspect='auto', cmap=plt.cm.Greys_r)
+        im.set_clim(np.percentile(img, (5, 98)))
         if Waxis == 1:
-            plt.scatter(xbins, ybins, alpha=0.5)
-            plt.plot(mx, my)
+            ax.scatter(xbins, ybins, alpha=0.5)
+            ax.plot(mx, my)
         if Waxis == 0:
-            plt.scatter(ybins, xbins, alpha=0.5)
-            plt.plot(my, mx)
+            ax.scatter(ybins, xbins, alpha=0.5)
+            ax.plot(my, mx)
         plt.show()
 
     return my
 
 
 def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
-                  Saxis=0, Waxis=1, display=False):
+                  Saxis=0, Waxis=1, display=False, ax=None):
     """
     **This is nearly identical to `specreduce.extract.BoxcarExtract`,
       because that was based on the same PyDIS source code as this**
@@ -261,6 +265,9 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
         (corresponds to NAXIS1 in the header). For KOSMOS, Waxis=0.
         (Default is 1)
         NOTE: if Saxis is changed, Waxis will be updated, and visa versa.
+    ax : matplotlib axes or subplot object, optional
+        axes or subplot to be plotted onto. If not specified one will be 
+        created. (Default is None)
 
     Returns
     -------
@@ -345,23 +352,24 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
                              (N_A + N_A**2. / N_B) * (sigB**2.))
 
     if display:
-        plt.figure()
-        plt.imshow(img, origin='lower', aspect='auto', cmap=plt.cm.Greys_r)
-        plt.clim(np.percentile(img, (5, 98)))
+        if ax is None:
+            fig, ax = plt.subplots(1,1)
+        im = ax.imshow(img, origin='lower', aspect='auto', cmap=plt.cm.Greys_r)
+        im.set_clim(np.percentile(img, (5, 98)))
 
         if Saxis == 0:
-            plt.plot(np.arange(len(trace_line)), trace_line, c='C0')
-            plt.fill_between(np.arange(len(trace_line)), trace_line + apwidth, trace_line-apwidth, color='C0', alpha=0.5)
-            plt.fill_between(np.arange(len(trace_line)), trace_line + apwidth + skysep, trace_line + apwidth + skysep + skywidth, color='C1', alpha=0.5)
-            plt.fill_between(np.arange(len(trace_line)), trace_line - apwidth - skysep, trace_line - apwidth - skysep - skywidth, color='C1', alpha=0.5)
+            ax.plot(np.arange(len(trace_line)), trace_line, c='C0')
+            ax.fill_between(np.arange(len(trace_line)), trace_line + apwidth, trace_line-apwidth, color='C0', alpha=0.5)
+            ax.fill_between(np.arange(len(trace_line)), trace_line + apwidth + skysep, trace_line + apwidth + skysep + skywidth, color='C1', alpha=0.5)
+            ax.fill_between(np.arange(len(trace_line)), trace_line - apwidth - skysep, trace_line - apwidth - skysep - skywidth, color='C1', alpha=0.5)
         if Saxis == 1:
-            plt.plot(trace_line, np.arange(len(trace_line)), c='C0')
-            plt.plot(trace_line + apwidth, np.arange(len(trace_line)), c='C0', alpha=0.5)
-            plt.plot(trace_line - apwidth, np.arange(len(trace_line)), c='C0', alpha=0.5)
-            plt.plot(trace_line - apwidth - skysep - skywidth, np.arange(len(trace_line)), c='C1', alpha=0.5)
-            plt.plot(trace_line - apwidth - skysep, np.arange(len(trace_line)), c='C1', alpha=0.5)
-            plt.plot(trace_line + apwidth + skysep + skywidth, np.arange(len(trace_line)), c='C1', alpha=0.5)
-            plt.plot(trace_line + apwidth + skysep, np.arange(len(trace_line)), c='C1', alpha=0.5)
+            ax.plot(trace_line, np.arange(len(trace_line)), c='C0')
+            ax.plot(trace_line + apwidth, np.arange(len(trace_line)), c='C0', alpha=0.5)
+            ax.plot(trace_line - apwidth, np.arange(len(trace_line)), c='C0', alpha=0.5)
+            ax.plot(trace_line - apwidth - skysep - skywidth, np.arange(len(trace_line)), c='C1', alpha=0.5)
+            ax.plot(trace_line - apwidth - skysep, np.arange(len(trace_line)), c='C1', alpha=0.5)
+            ax.plot(trace_line + apwidth + skysep + skywidth, np.arange(len(trace_line)), c='C1', alpha=0.5)
+            ax.plot(trace_line + apwidth + skysep, np.arange(len(trace_line)), c='C1', alpha=0.5)
 
         plt.show()
 

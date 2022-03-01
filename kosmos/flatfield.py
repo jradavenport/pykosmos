@@ -50,7 +50,7 @@ def find_illum(flat, threshold=0.9, Saxis=0, Waxis=1):
 
 
 def flat_response(medflat, smooth=False, npix=11, display=False,
-                  Saxis=0, Waxis=1):
+                  Saxis=0, Waxis=1, ax=None):
     """
     Divide out the spatially-averaged spectrum response from the flat image.
     This is to remove the spectral response of the flatfield (e.g. Quartz) lamp.
@@ -80,7 +80,9 @@ def flat_response(medflat, smooth=False, npix=11, display=False,
         (corresponds to NAXIS1 in the header). For KOSMOS, Waxis=0.
         (Default is 1)
         NOTE: if Saxis is changed, Waxis will be updated, and visa versa.
-
+    ax : matplotlib axes or subplot object, optional
+        axes or subplot to be plotted onto. If not specified one will be 
+        created. (Default is None)
     Returns
     -------
     flat : CCDData object
@@ -126,10 +128,11 @@ def flat_response(medflat, smooth=False, npix=11, display=False,
 
     # the resulting flat should just show the pixel-to-pixel variations we're after
     if display:
-        plt.figure()
-        plt.imshow(flat, origin='lower', aspect='auto', cmap=plt.cm.inferno)
-        plt.colorbar()
-        plt.title('flat')
+        if ax is None:
+            fig, ax = plt.subplots(1,1)
+        im = ax.imshow(flat, origin='lower', aspect='auto', cmap=plt.cm.inferno)
+        plt.colorbar(mappable=im)
+        ax.set_title('flat')
         plt.show()
 
     return flat
