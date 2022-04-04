@@ -166,7 +166,7 @@ def onedstd(stdstar):
 
 
 def standard_sensfunc(object_spectrum, standard, mode='spline', polydeg=9,
-                      badlines=None, display=False):
+                      badlines=None, display=False, ax=None):
     """
     Compute the standard star sensitivity function. First down-samples the
     observed standard star spectrum to the reference spectrum, then computes
@@ -189,6 +189,9 @@ def standard_sensfunc(object_spectrum, standard, mode='spline', polydeg=9,
         If True, plot the sensfunc (Default is False)
     badlines : array-like, optional
         A list of values (lines) to mask out of when generating sensfunc
+    ax : matplotlib axes or subplot object, optional
+        axes or subplot to be plotted onto. If not specified one will be 
+        created. (Default is None)
 
     Returns
     -------
@@ -250,16 +253,17 @@ def standard_sensfunc(object_spectrum, standard, mode='spline', polydeg=9,
     sensfunc_spec = Spectrum1D(spectral_axis=obj_wave, flux=sensfunc_out)
 
     if display is True:
-        plt.figure()
-        plt.plot(obj_wave, obj_flux * sensfunc_out, c='C0',
+        if ax is None:
+            fig, ax = plt.subplots(1,1)
+        ax.plot(obj_wave, obj_flux * sensfunc_out, c='C0',
                     label='Observed x sensfunc', alpha=0.5)
-        plt.scatter(obj_wave_ds, std_flux_ds, color='C1', alpha=0.75)
+        ax.scatter(obj_wave_ds, std_flux_ds, color='C1', alpha=0.75)
 
-        plt.xlabel('Wavelength')
-        plt.ylabel('Flux')
+        ax.set_xlabel('Wavelength')
+        ax.set_ylabel('Flux')
 
-        plt.xlim(np.nanmin(obj_wave.value), np.nanmax(obj_wave.value))
-        plt.ylim(np.nanmin(obj_flux.value * sensfunc_out.value)*0.98,
+        ax.set_xlim(np.nanmin(obj_wave.value), np.nanmax(obj_wave.value))
+        ax.set_ylim(np.nanmin(obj_flux.value * sensfunc_out.value)*0.98,
                  np.nanmax(obj_flux.value * sensfunc_out.value) * 1.02)
         plt.show()
 
