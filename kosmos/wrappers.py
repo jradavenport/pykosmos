@@ -1,5 +1,6 @@
 """
-Scripts that wrap around the spectral reduction functions
+Scripts that wrap around the spectral reduction functions. In the future,
+could include instrument or setup sepcific reduction workflows here.
 """
 
 import kosmos
@@ -49,7 +50,6 @@ def script_reduce(script,
     adjustments that may be needed for precision work.
 
     EXAMPLE SCRIPT FILE
-    -------------------
         file1.fits, bias
         file2.fits, bias
         file3.fits, flat
@@ -118,14 +118,15 @@ def script_reduce(script,
     Returns
     -------
     Output files are created for combined calibration frames
-    (e.g. bias.fits, flat.fits), and fully reduced versions of objects
+        (e.g. bias.fits, flat.fits), and fully reduced versions of objects
 
-    Improvements
-    ------------
-    - add other wavelenth solution methods (e.g. DTW based on Kosmos templates)
-    - Output reduced spectra using different file types? (text file?)
-    - enable jpeg save w/o display (faster/automatic)
     """
+
+    # Improvements Needed
+    # ------------
+    # - add other wavelenth solution methods (e.g. DTW based on Kosmos templates)
+    # - Output reduced spectra using different file types? (text file?)
+    # - enable jpeg save w/o display (faster/automatic)
 
     if silencewarnings is True:
         # i hate doing this, but wcs/fits gives SO many warnings for our images...
@@ -309,3 +310,4 @@ def script_reduce(script,
         j += 1
 
     return
+

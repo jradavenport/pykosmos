@@ -374,9 +374,10 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
     Notes: very simple, fairly robust, but has several key limitations:
     - resulting wavelength axis may not be smooth (mapping to reference)
     - DTW fixes the first/last pixel to the start/stop of reference spectrum.
-        If reference is much wider than observed lamp, this is a big problem.
-        Suggest using `dtwalign` for 1st-pass, but examine (pixel, wavelength)
-        plot to see if diverges strongly!
+
+    If reference is much wider than observed lamp, this is a big problem.
+    Suggest using `identify_dtw` for 1st-pass, but examine (pixel, wavelength)
+    plot to see if it diverges strongly!
 
     This function should probably be wrapped with something instrument-
     specific, to handle known limitations and input a sensible reference.
@@ -415,7 +416,7 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
     -------
     The pixel locations and wavelengths of the identified features
     (lines or the whole spectrum):
-    pixel, wavelength
+        pixel, wavelength
     """
 
     # use Dynamic Time Warping!
@@ -527,13 +528,13 @@ def fit_wavelength(spec, xpoints, wpoints, display=False,
         axis added.
 
     if returnvar=True, then return:
-    outspec, wavelength_variance
-
-    Improvements
-    ------------
-    should the fit and apply steps be separated?
+        outspec, wavelength_variance
 
     """
+
+    # Improvements Needed
+    # ------------
+    # should the fit and apply steps be separated?
 
     # sort, just in case
     srt = np.argsort(xpoints)

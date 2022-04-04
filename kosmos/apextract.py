@@ -1,18 +1,3 @@
-"""
-I envision a new extract that uses:
-- the trace
-- a full 2D wavelength solution across the CCD
-- does "optimal" aperture, or even simple "PSF" photometry at each pixel center, using
-    sky pixels that are transformed to be at the correct wavelength.
-
-Currenlty in the demos we run Trace & BoxcarExtract, and then the
-wavelength solution, but that's backwards I think. It *should* be:
-1. bias/flat/dark
-2. wavelength mapping
-3. trace & extract
-4. flux calibration
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
@@ -20,8 +5,6 @@ from scipy.interpolate import UnivariateSpline
 from specutils import Spectrum1D
 from astropy import units as u
 from astropy.nddata import StdDevUncertainty
-# from matplotlib.widgets import Cursor
-
 
 __all__ = ['trace', 'BoxcarExtract']
 
@@ -99,14 +82,15 @@ def trace(img, nbins=20, guess=None, window=None,
         The spatial (Y) positions of the trace, interpolated over the
         entire wavelength (X) axis
 
-    Improvements Needed
-    -------------------
-    1) switch to astropy models for Gaussian (?)
-    2) return info about trace width (?)
-    3) add re-fit trace functionality (or break off into another method)
-    4) add other interpolation modes besides spline, maybe via
-        specutils.manipulation methods?
     """
+
+    # Improvements Needed
+    # -------------------
+    # 1) switch to astropy models for Gaussian (?)
+    # 2) return info about trace width (?)
+    # 3) add re-fit trace functionality (or break off into another method)
+    # 4) add other interpolation modes besides spline, maybe via
+    #     specutils.manipulation methods?
 
     # define the wavelength & spatial axis, if we want to enable swapping programatically later
     # defined to agree with e.g.: img.shape => (1024, 2048) = (spatial, wavelength)
@@ -223,8 +207,8 @@ def trace(img, nbins=20, guess=None, window=None,
 def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
                   Saxis=0, Waxis=1, display=False, ax=None):
     """
-    **This is nearly identical to `specreduce.extract.BoxcarExtract`,
-      because that was based on the same PyDIS source code as this**
+    This is nearly identical to specreduce.extract.BoxcarExtract,
+    because that was based on the same PyDIS source code as this.
 
     1. Extract the spectrum using the trace. Simply add up all the flux
     around the aperture within a specified +/- width.
@@ -242,7 +226,7 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
         This is the image to run extract over
     trace_line : 1-d array
         The spatial positions (Y axis) corresponding to the center of the
-        trace for every wavelength (X axis), as returned from `trace`
+        trace for every wavelength (X axis), as returned from trace
     apwidth : int, optional
         The width along the Y axis on either side of the trace to extract.
         Note: a fixed width is used along the whole trace.
@@ -276,16 +260,16 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
     skyspec : Spectrum1D object
         The sky spectrum used in the extraction process
 
-
-    Improvements Needed
-    -------------------
-    1. take a wavelength solution for the trace, interpolate sky region
-        onto same wavelengths as the trace (BIG IMPROVEMENT)
-        Maybe use `specutils.manipulation.FluxConservingResampler` for the
-        interpolation over the sky regions?
-    2. optionally allow mode to be either simple aperture (current) or the
-        "optimal" (variance weighted) extraction algorithm
     """
+
+    # Improvements Needed
+    # -------------------
+    # 1. take a wavelength solution for the trace, interpolate sky region
+    #     onto same wavelengths as the trace (BIG IMPROVEMENT)
+    #     Maybe use specutils.manipulation.FluxConservingResampler for the
+    #     interpolation over the sky regions?
+    # 2. optionally allow mode to be either simple aperture (current) or the
+    #     "optimal" (variance weighted) extraction algorithm
 
     # old DIS default was Saxis=0, Waxis=1, shape = (1028,2048)
     # KOSMOS is swapped, shape = (4096, 2148)

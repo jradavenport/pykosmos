@@ -4,7 +4,6 @@ from astropy.convolution import convolve, Box1DKernel
 from ccdproc import Combiner, trim_image
 from .imtools import proc
 from astropy.nddata import CCDData
-# from astropy import units as u
 
 __all__ = ['find_illum', 'flat_response', 'flatcombine']
 
