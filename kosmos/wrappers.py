@@ -1,5 +1,6 @@
 """
-Scripts that wrap around the spectral reduction functions
+Scripts that wrap around the spectral reduction functions. In the future,
+could include instrument or setup sepcific reduction workflows here.
 """
 
 import kosmos

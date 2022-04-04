@@ -1,17 +1,11 @@
-"""
-NOT EDITED FOR KOSMOS YET
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.table import Table
-from numpy import ndarray
 from scipy.interpolate import UnivariateSpline
 from astropy.constants import c as cc
 import astropy.units as u
 from specutils import Spectrum1D
 import os
-
 
 __all__ = ['mag2flux', 'obs_extinction', 'airmass_cor', 'onedstd',
            'standard_sensfunc', 'apply_sensfunc']

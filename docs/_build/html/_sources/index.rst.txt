@@ -13,6 +13,7 @@ should work will almost any longslit spectrograph.
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   modules
 
 
 
@@ -22,3 +23,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+

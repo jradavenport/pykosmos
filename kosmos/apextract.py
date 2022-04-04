@@ -6,7 +6,6 @@ from specutils import Spectrum1D
 from astropy import units as u
 from astropy.nddata import StdDevUncertainty
 
-
 __all__ = ['trace', 'BoxcarExtract']
 
 

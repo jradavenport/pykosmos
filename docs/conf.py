@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 project = 'kosmos'
 copyright = '2022, James Davenport'
-author = 'James Davenport'
+author = 'James R. A. Davenport'
 
 
 # -- General configuration ---------------------------------------------------
