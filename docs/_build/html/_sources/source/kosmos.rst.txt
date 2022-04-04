@@ -12,14 +12,6 @@ kosmos.apextract module
    :undoc-members:
    :show-inheritance:
 
-kosmos.dtwalign\_orig module
-----------------------------
-
-.. automodule:: kosmos.dtwalign_orig
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 kosmos.flatfield module
 -----------------------
 
@@ -52,26 +44,10 @@ kosmos.imtools module
    :undoc-members:
    :show-inheritance:
 
-kosmos.simpledtw module
------------------------
-
-.. automodule:: kosmos.simpledtw
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 kosmos.version module
 ---------------------
 
 .. automodule:: kosmos.version
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-kosmos.window\_xcorl module
----------------------------
-
-.. automodule:: kosmos.window_xcorl
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,4 +1,6 @@
 # KOSMOS
+[![Documentation Status](https://readthedocs.org/projects/kosmos/badge/?version=latest)](https://kosmos.readthedocs.io/en/latest/?badge=latest)
+[![DOI](https://zenodo.org/badge/199771667.svg)](https://zenodo.org/badge/latestdoi/199771667)
 
 An easy to use reduction package for one-dimensional longslit spectroscopy. 
 

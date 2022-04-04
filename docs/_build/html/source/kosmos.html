@@ -8,27 +8,33 @@
 
     <title>kosmos package &#8212; kosmos  documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css" />
+    
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
+    
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-   
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="search" title="Search" href="../search.html" /> 
   </head><body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">kosmos  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">kosmos package</a></li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
-
           <div class="body" role="main">
             
   <section id="kosmos-package">
@@ -38,26 +44,11 @@
 </section>
 <section id="module-kosmos.apextract">
 <span id="kosmos-apextract-module"></span><h2>kosmos.apextract module<a class="headerlink" href="#module-kosmos.apextract" title="Permalink to this headline">¶</a></h2>
-<p>I envision a new extract that uses:
-- the trace
-- a full 2D wavelength solution across the CCD
-- does “optimal” aperture, or even simple “PSF” photometry at each pixel center, using</p>
-<blockquote>
-<div><p>sky pixels that are transformed to be at the correct wavelength.</p>
-</div></blockquote>
-<p>Currenlty in the demos we run Trace &amp; BoxcarExtract, and then the
-wavelength solution, but that’s backwards I think. It <em>should</em> be:
-1. bias/flat/dark
-2. wavelength mapping
-3. trace &amp; extract
-4. flux calibration</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="kosmos.apextract.BoxcarExtract">
 <span class="sig-prename descclassname"><span class="pre">kosmos.apextract.</span></span><span class="sig-name descname"><span class="pre">BoxcarExtract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trace_line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apwidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skysep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skywidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skydeg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Saxis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Waxis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kosmos.apextract.BoxcarExtract" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt><a href="#id1"><span class="problematic" id="id2">**</span></a>This is nearly identical to <cite>specreduce.extract.BoxcarExtract</cite>,</dt><dd><p>because that was based on the same PyDIS source code as this**</p>
-</dd>
-</dl>
+<dd><p>This is nearly identical to specreduce.extract.BoxcarExtract,
+because that was based on the same PyDIS source code as this.</p>
 <p>1. Extract the spectrum using the trace. Simply add up all the flux
 around the aperture within a specified +/- width.</p>
 <p>Note: implicitly assumes wavelength axis is perpendicular to
@@ -71,7 +62,7 @@ the trace.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>img</strong> (<em>CCDData object</em>) – This is the image to run extract over</p></li>
 <li><p><strong>trace_line</strong> (<em>1-d array</em>) – The spatial positions (Y axis) corresponding to the center of the
-trace for every wavelength (X axis), as returned from <cite>trace</cite></p></li>
+trace for every wavelength (X axis), as returned from trace</p></li>
 <li><p><strong>apwidth</strong> (<em>int, optional</em>) – The width along the Y axis on either side of the trace to extract.
 Note: a fixed width is used along the whole trace.
 (default is 8 pixels, must be at least 1 pixel)</p></li>
@@ -98,20 +89,6 @@ NOTE: if Saxis is changed, Waxis will be updated, and visa versa.</p></li>
 </p>
 </dd>
 </dl>
-<ol class="arabic simple">
-<li><dl class="simple">
-<dt>take a wavelength solution for the trace, interpolate sky region</dt><dd><p>onto same wavelengths as the trace (BIG IMPROVEMENT)
-Maybe use <cite>specutils.manipulation.FluxConservingResampler</cite> for the
-interpolation over the sky regions?</p>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>optionally allow mode to be either simple aperture (current) or the</dt><dd><p>“optimal” (variance weighted) extraction algorithm</p>
-</dd>
-</dl>
-</li>
-</ol>
 </dd></dl>
 
 <dl class="py function">
@@ -146,69 +123,11 @@ NOTE: if Saxis is changed, Waxis will be updated, and visa versa.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>my</strong> (<em>array</em>) – The spatial (Y) positions of the trace, interpolated over the
-entire wavelength (X) axis</p></li>
-<li><p><em>Improvements Needed</em></p></li>
-<li><p><em>——————-</em></p></li>
-<li><p><em>1) switch to astropy models for Gaussian (?)</em></p></li>
-<li><p><em>2) return info about trace width (?)</em></p></li>
-<li><p><em>3) add re-fit trace functionality (or break off into another method)</em></p></li>
-<li><p><em>4) add other interpolation modes besides spline, maybe via</em> – specutils.manipulation methods?</p></li>
-</ul>
-</p>
-</dd>
-</dl>
-</dd></dl>
-
-</section>
-<section id="module-kosmos.dtwalign_orig">
-<span id="kosmos-dtwalign-orig-module"></span><h2>kosmos.dtwalign_orig module<a class="headerlink" href="#module-kosmos.dtwalign_orig" title="Permalink to this headline">¶</a></h2>
-<p>use Dynamic Time Warping to align a spectrum to a ref</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="kosmos.dtwalign_orig.dtwalign">
-<span class="sig-prename descclassname"><span class="pre">kosmos.dtwalign_orig.</span></span><span class="sig-name descname"><span class="pre">dtwalign</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upsample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ufactor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_pattern</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'symmetric1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_begin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_spline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pthreshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kosmos.dtwalign_orig.dtwalign" title="Permalink to this definition">¶</a></dt>
-<dd><p>Align an arc lamp spectrum in pixel-units to a reference spectrum
-in wavelength units using Dynamic Time Warping (DTW).</p>
-<p>Notes: very simple, fairly robust, but has several key limitations:
-- resulting wavelength axis may not be smooth (mapping to reference)
-- DTW fixes the first/last pixel to the start/stop of reference spectrum.</p>
-<blockquote>
-<div><p>If reference is much wider than observed lamp, this is a big problem.
-Suggest using <cite>dtwalign</cite> for 1st-pass, but examine (pixel, wavelength)
-plot to see if diverges strongly!</p>
-</div></blockquote>
-<p>This function should probably be wrapped with something instrument-
-specific, to handle known limitations and input a sensible reference.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>arc</strong> (<em>Spectrum1D object</em>) – the observed Arc-lamp spectrum to align, as returned by e.g. BoxcarExtract
-spectral axis typically has units of pixels.</p></li>
-<li><p><strong>ref</strong> (<em>Spectrum1D object</em>) – reference spectrum to match to</p></li>
-<li><p><strong>upsample</strong> (<em>bool (default=True)</em>) – do the DTW on an up-sampled version of the observed arc and reference
-spectra using a gaussian smooth. Linearlly down-sample result.</p></li>
-<li><p><strong>Ufactor</strong> (<em>int (default=5)</em>) – the factor to up-sample both the ref and arc spectra by.
-UPGRADE IDEA: up-sample the arc and ref by different factors?</p></li>
-<li><p><strong>peak_spline</strong> (<em>bool (default=True)</em>) – After DTW match has been run on the whole spectrum, select pixels
-with peaks in arc spectrum and fit a spline. Final wavelength
-solution returned comes from spline fit. This is often useful since
-only the peaks carry “information” in the DTW match, and the
-wavelength solution can be very non-smooth between peaks. This
-mode essentially uses DTW to do peak-wavelength identification.
-If you don’t like the spline default, set to False and do your
-own interpolation of the line wavelengths.</p></li>
-<li><p><strong>pthreshold</strong> (<em>float (default=0.95)</em>) – Number between 0 and 1, the threshold to use in defining
-“peaks” in the spectrum if <cite>peak_spline=True</cite>.</p></li>
-<li><p><strong>display</strong> (<em>bool (optional, default=False)</em>) – if set, produce a plot of pixel vs wavelength solution</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>spec</strong> – The same spectrum as the arc-lamp input, but swapping the
-pixel to wavelength axis</p>
+<dd class="field-even"><p><strong>my</strong> – The spatial (Y) positions of the trace, interpolated over the
+entire wavelength (X) axis</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Spectrum1D object</p>
+<dd class="field-odd"><p>array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -539,11 +458,7 @@ resulting wavelength axis</p></li>
 <dd class="field-even"><p><ul class="simple">
 <li><p><strong>outspec</strong> (<em>Sepctrum1D object</em>) – the same input spectrum, but with the newly fit wavelength
 axis added.</p></li>
-<li><p><em>if returnvar=True, then return</em></p></li>
-<li><p><em>outspec, wavelength_variance</em></p></li>
-<li><p><em>Improvements</em></p></li>
-<li><p><em>————</em></p></li>
-<li><p><em>should the fit and apply steps be separated?</em></p></li>
+<li><p><em>if returnvar=True, then return</em> – outspec, wavelength_variance</p></li>
 </ul>
 </p>
 </dd>
@@ -558,11 +473,9 @@ in wavelength units using Dynamic Time Warping (DTW).</p>
 <p>Notes: very simple, fairly robust, but has several key limitations:
 - resulting wavelength axis may not be smooth (mapping to reference)
 - DTW fixes the first/last pixel to the start/stop of reference spectrum.</p>
-<blockquote>
-<div><p>If reference is much wider than observed lamp, this is a big problem.
-Suggest using <cite>dtwalign</cite> for 1st-pass, but examine (pixel, wavelength)
-plot to see if diverges strongly!</p>
-</div></blockquote>
+<p>If reference is much wider than observed lamp, this is a big problem.
+Suggest using <cite>identify_dtw</cite> for 1st-pass, but examine (pixel, wavelength)
+plot to see if it diverges strongly!</p>
 <p>This function should probably be wrapped with something instrument-
 specific, to handle known limitations and input a sensible reference.</p>
 <dl class="field-list simple">
@@ -593,8 +506,7 @@ NEED TO UPDATE DESCRIPTION HERE… RETURNS ONLY PEAKS, LIKE OTHER IDENTIFY MODES
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
 <li><p><em>The pixel locations and wavelengths of the identified features</em></p></li>
-<li><p><em>(lines or the whole spectrum)</em></p></li>
-<li><p><em>pixel, wavelength</em></p></li>
+<li><p><em>(lines or the whole spectrum)</em> – pixel, wavelength</p></li>
 </ul>
 </p>
 </dd>
@@ -755,37 +667,8 @@ in units of electrons per adu this may result in an error</p></li>
 </dd></dl>
 
 </section>
-<section id="module-kosmos.simpledtw">
-<span id="kosmos-simpledtw-module"></span><h2>kosmos.simpledtw module<a class="headerlink" href="#module-kosmos.simpledtw" title="Permalink to this headline">¶</a></h2>
-<p><a class="reference external" href="https://github.com/talcs/simpledtw">https://github.com/talcs/simpledtw</a>
-MIT License</p>
-<p>Copyright (c) 2018 talcs</p>
-<p>Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the “Software”), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:</p>
-<p>The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.</p>
-<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="kosmos.simpledtw.dtw">
-<span class="sig-prename descclassname"><span class="pre">kosmos.simpledtw.</span></span><span class="sig-name descname"><span class="pre">dtw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_func=&lt;function</span> <span class="pre">norm&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kosmos.simpledtw.dtw" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</section>
 <section id="module-kosmos.version">
 <span id="kosmos-version-module"></span><h2>kosmos.version module<a class="headerlink" href="#module-kosmos.version" title="Permalink to this headline">¶</a></h2>
-</section>
-<section id="kosmos-window-xcorl-module">
-<h2>kosmos.window_xcorl module<a class="headerlink" href="#kosmos-window-xcorl-module" title="Permalink to this headline">¶</a></h2>
 </section>
 <section id="module-kosmos.wrappers">
 <span id="kosmos-wrappers-module"></span><h2>kosmos.wrappers module<a class="headerlink" href="#module-kosmos.wrappers" title="Permalink to this headline">¶</a></h2>
@@ -818,15 +701,16 @@ file ensures a new wavelength solution is applied.</p>
 sets of simple long-slit observations – even from multiple nights –
 with well-defined results, but does not allow for fully customized
 adjustments that may be needed for precision work.</p>
-<blockquote>
-<div><p>file1.fits, bias
+<dl class="simple">
+<dt>EXAMPLE SCRIPT FILE</dt><dd><p>file1.fits, bias
 file2.fits, bias
 file3.fits, flat
 file4.fits, flat
 file8.fits, arc
 file6.fits, std:spec50cal/bd284211.dat
 file7.fits, object</p>
-</div></blockquote>
+</dd>
+</dl>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul>
@@ -874,16 +758,10 @@ from WCS. (caution: you might miss an important failure)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><em>Output files are created for combined calibration frames</em></p></li>
-<li><p><em>(e.g. bias.fits, flat.fits), and fully reduced versions of objects</em></p></li>
-<li><p><em>Improvements</em></p></li>
-<li><p><em>————</em></p></li>
-<li><p><em>- add other wavelenth solution methods (e.g. DTW based on Kosmos templates)</em></p></li>
-<li><p><em>- Output reduced spectra using different file types? (text file?)</em></p></li>
-<li><p><em>- enable jpeg save w/o display (faster/automatic)</em></p></li>
-</ul>
-</p>
+<dd class="field-even"><p>(e.g. bias.fits, flat.fits), and fully reduced versions of objects</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Output files are created for combined calibration frames</p>
 </dd>
 </dl>
 </dd></dl>
@@ -895,30 +773,37 @@ from WCS. (caution: you might miss an important failure)</p></li>
 </section>
 
 
+            <div class="clearer"></div>
           </div>
-          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">kosmos</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../index.html">Documentation overview</a><ul>
-  </ul></li>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">kosmos package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-kosmos.apextract">kosmos.apextract module</a></li>
+<li><a class="reference internal" href="#module-kosmos.flatfield">kosmos.flatfield module</a></li>
+<li><a class="reference internal" href="#module-kosmos.fluxcal">kosmos.fluxcal module</a></li>
+<li><a class="reference internal" href="#module-kosmos.identify">kosmos.identify module</a></li>
+<li><a class="reference internal" href="#module-kosmos.imtools">kosmos.imtools module</a></li>
+<li><a class="reference internal" href="#module-kosmos.version">kosmos.version module</a></li>
+<li><a class="reference internal" href="#module-kosmos.wrappers">kosmos.wrappers module</a></li>
+<li><a class="reference internal" href="#module-kosmos">Module contents</a></li>
 </ul>
-</div>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/source/kosmos.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
@@ -929,32 +814,26 @@ from WCS. (caution: you might miss an important failure)</p></li>
     </div>
 </div>
 <script>$('#searchbox').show(0);</script>
-
-
-
-
-
-
-
-
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2022, James Davenport.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.4.0</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
-      
-      |
-      <a href="../_sources/source/kosmos.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">kosmos  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">kosmos package</a></li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, James Davenport.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    </div>
   </body>
 </html>
