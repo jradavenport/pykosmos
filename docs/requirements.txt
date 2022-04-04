@@ -1,10 +1,7 @@
-docutils>=0.17.1
-numpy>=1.21.2
-matplotlib>=3.5.1
-ipywidgets>=7.6.5
-ipython>=7.31.1
-scipy>=1.7.3
-pandas>=1.4.1
+numpy>=1.21
+matplotlib>=3.5
+scipy
+pandas
 
 astropy>=4.2.1
 ccdproc>=2.2.0
