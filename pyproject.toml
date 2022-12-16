@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools @ git+https://github.com/pypa/setuptools.git@main"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PyKosmos"
+version = "0.1.0"
+authors = [
+  { name="James R.A. Davenport", email="jrad@uw.edu" },
+]
+description = "A data reduction toolkit"
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+
+]
+classifiers = [
+
+]
+
+[tool.setuptools.packages.find]
+where = ["."]  # list of folders that contain the packages (["."] by default)
+include = ["kosmos*"]  # package names should match these glob patterns (["*"] by default)
+
+namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
+
+[project.urls]
+"Homepage" = "https://github.com/jradavenport/kosmos"
+"Bug Tracker" = "https://github.com/jradavenport/kosmos/issues"

@@ -1,0 +1,7 @@
+LICENSE
+README.md
+pyproject.toml
+kosmos/PyKosmos.egg-info/PKG-INFO
+kosmos/PyKosmos.egg-info/SOURCES.txt
+kosmos/PyKosmos.egg-info/dependency_links.txt
+kosmos/PyKosmos.egg-info/top_level.txt
