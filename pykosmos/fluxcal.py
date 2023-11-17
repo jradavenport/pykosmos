@@ -180,7 +180,7 @@ def standard_sensfunc(object_spectrum, standard, mode='spline', polydeg=9,
         The observed standard star spectrum
     standard : astropy table
         output from `onedstd`, has columns ('wave', 'width', 'mag', 'flux')
-    mode : str, optional {'linear', 'spline', 'poly', 'interp'}
+    mode : str, optional {'linear', 'spline', 'poly'}
         (Default is spline)
     polydeg : float, optional
         if mode='poly', this is the order of the polynomial to fit through
