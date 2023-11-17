@@ -176,6 +176,7 @@ def identify_nearest(arcspec, wapprox=None, linelist=None, linewave=None,
     linewave : numpy array or None, optional
         Optionally pass an array of arclines to fit, as returned by e.g.
         `loadlinelist()`
+        NOTE: either linelist or linewave must be provided.
     autotol : int, optional (default is 25)
         the tolerance in pixel units to allow nearest matches within.
     silent : bool, optional (default is False)
