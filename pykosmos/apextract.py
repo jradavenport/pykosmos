@@ -327,7 +327,7 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
 
         # finally, compute the error in this pixel
         sigB = np.nanstd(z)  # stddev in the background data
-        N_B = np.float(len(y))  # number of bkgd pixels
+        N_B = float(len(y))  # number of bkgd pixels
         N_A = apwidth * 2. + 1  # number of aperture pixels
 
         # based on aperture phot err description by F. Masci, Caltech:

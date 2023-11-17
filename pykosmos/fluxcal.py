@@ -210,9 +210,9 @@ def standard_sensfunc(object_spectrum, standard, mode='spline', polydeg=9,
 
     # down-sample (ds) the observed flux to the standard's bins
     # IMPROVEMENT: could this be done w/ `specutils.manipulation.FluxConservingResampler`?
-    obj_flux_ds = np.array([], dtype=np.float)
-    obj_wave_ds = np.array([], dtype=np.float)
-    std_flux_ds = np.array([], dtype=np.float)
+    obj_flux_ds = np.array([], dtype=float)
+    obj_wave_ds = np.array([], dtype=float)
+    std_flux_ds = np.array([], dtype=float)
     for i in range(len(standard['flux'])):
         # IMPROVEMENT: this could be done faster/better w/o using np.where...
         rng = np.where((obj_wave.value >= standard['wave'][i] - standard['width'][i] / 2.0) &

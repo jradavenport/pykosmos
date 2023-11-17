@@ -217,8 +217,8 @@ def identify_nearest(arcspec, wapprox=None, linelist=None, linewave=None,
     # every time there's a new match, recalc the spline sol'n, work all the way out
     # this both identifies lines, and has byproduct of ending w/ a spline model
 
-    xpoints = np.array([], dtype=np.float)  # pixel line centers
-    wpoints = np.array([], dtype=np.float)  # wavelength line centers
+    xpoints = np.array([], dtype=float)  # pixel line centers
+    wpoints = np.array([], dtype=float)  # wavelength line centers
 
     # find center-most lines, sort by dist from center pixels
     ss = np.argsort(np.abs(wcent_pix - np.nanmedian(xpixels.value)))
