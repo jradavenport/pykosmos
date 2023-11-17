@@ -118,7 +118,7 @@ def find_peaks(wave, flux, pwidth=10, pthreshold=0.97, minsep=1):
 def loadlinelist(file):
     """
     Load a list of arclamp lines from the supplied library of files in the
-    directory: kosmos/resources/linelists.
+    directory: pykosmos/resources/linelists.
 
     Note: this directory was mostly taken from IRAF.
     https://github.com/joequant/iraf/tree/master/noao/lib/linelists

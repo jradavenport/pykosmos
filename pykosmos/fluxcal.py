@@ -47,7 +47,7 @@ def mag2flux(spec_in, zeropt=48.60):
 def obs_extinction(obs_file):
     """
     Load the observatory-specific airmass extinction file from the supplied library
-    in the directory kosmos/resources/extinction
+    in the directory pykosmos/resources/extinction
 
     Parameters
     ----------
@@ -122,7 +122,7 @@ def onedstd(stdstar):
     Parameters
     ----------
     stdstar : str
-        Name of the standard star file in the kosmos/resources/onedstds
+        Name of the standard star file in the pykosmos/resources/onedstds
         directory to be used for the flux calibration. The user must
         provide the subdirectory and file name. For example:
 
