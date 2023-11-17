@@ -157,10 +157,6 @@ def script_reduce(script,
     if linelist is not None:
         arclines = pk.loadlinelist(linelist)
 
-    # airmass observatory extinction file to use
-    if obs_file is not None:
-        obs_file = pk.obs_extinction(obs_file)
-
     # write the log file to save input settings
     if write_reduced is True:
         lout = open(script+'.log', 'w')
@@ -173,13 +169,19 @@ def script_reduce(script,
         lout.write('trace_guess = ' + str(trace_guess) + '\n')
         lout.write('trace_window = ' + str(trace_window) + '\n')
         lout.write('stdtrace = ' + str(trace_window) + '\n')
-        lout.write('obs_file = ' + obs_file + '\n')
+        if obs_file is not None:
+            lout.write('obs_file = ' + str(obs_file) + '\n')
         lout.write('linelist = ' + linelist + '\n')
         lout.write('waveapprox = ' + str(waveapprox) + '\n')
         lout.write('Saxis = ' + str(Saxis) + '\n')
         lout.write('Waxis = ' + str(Waxis) + '\n')
         lout.close() # close log file
         # can move CLOSE to the end of script, in case there's things to add later
+
+
+    # airmass observatory extinction file to use
+    if obs_file is not None:
+        obs_file = pk.obs_extinction(obs_file)
 
     j = 0
     while j < len(tbl):
@@ -244,7 +246,7 @@ def script_reduce(script,
                                      Waxis=Waxis, Saxis=Saxis)
 
             sci_ex, sci_sky = pk.BoxcarExtract(img, trace, apwidth=apwidth, skysep=skysep, skywidth=skywidth, Waxis=Waxis, Saxis=Saxis)
-            spectrum = sci_ex - sci_sky
+            spectrum = sci_ex.subtract(sci_sky, compare_wcs=None)
 
             # EVERY frame is: traced, extracted from both the data & arc, and identified
 
