@@ -4,6 +4,13 @@
 
 An easy to use reduction package for one-dimensional longslit spectroscopy. 
 
+## Installation
+The easiest way to install is via pip:
+````
+pip install pykosmos
+````
+
+
 ## Goals
 This tool *should* be able to handle 90% of basic reduction needs from a longslit-style spectrograph.... there are many other smaller or more subtle goals for this project that will be outlined here.
 
