@@ -1,0 +1,12 @@
+# pykosmos/scriptreduce log for: apo05_script.csv
+DATE-REDUCED = 2023-11-17 19:42:39.114534
+trim = True
+trace_nbins = 15
+trace_guess = None
+trace_window = None
+stdtrace = None
+obs_file = apoextinct.dat
+linelist = apohenear.dat
+waveapprox = False
+Saxis = 0
+Waxis = 1
