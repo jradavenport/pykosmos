@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pykosmos"
+version = "0.3"
+authors = [
+  { name="James Davenport", email="jrad@uw.edu" },
+]
+description = "A spectral data reduction pipeline"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+  "numpy>=1.21", 
+  "matplotlib>=3.5",
+  "scipy", 
+  "pandas",
+  "ipywidgets",
+  "astropy>=5.3",
+  "specreduce>=1.3.0",
+  "specutils>=1.12.0",
+  "ccdproc>=2.4.1",
+  "dtw>=1.3",
+]
+
+[project.urls]
+Homepage = "https://github.com/jradavenport/pykosmos"
+Issues = "https://github.com/jradavenport/pykosmos/issues"
