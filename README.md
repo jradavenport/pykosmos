@@ -25,5 +25,7 @@ The predecessor was [PyDIS](https://github.com/StellarCartography/pydis), a semi
 My [original blog post](https://jradavenport.github.io/2015/04/01/spectra.html) on the topic from 2015 still largely stands...
 
 ## Links
-* [PyDIS](https://github.com/StellarCartography/pydis)
+* [PyKOSMOS](https://github.com/jradavenport/pykosmos/) on GitHub
+* [KOSMOS](https://www.apo.nmsu.edu/arc35m/Instruments/KOSMOS/) instrument page at APO
+* [PyDIS](https://github.com/StellarCartography/pydis), the predecessor.
 * [dtw_identify](https://github.com/jradavenport/dtw_identify/), automatic wavelength calibration using Dynamic Time Warping, developed in PyKOSMOS
