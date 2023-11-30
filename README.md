@@ -31,4 +31,4 @@ My [original blog post](https://jradavenport.github.io/2015/04/01/spectra.html) 
 * [KOSMOS](https://www.apo.nmsu.edu/arc35m/Instruments/KOSMOS/) instrument page at APO
 * [PyDIS](https://github.com/StellarCartography/pydis), the predecessor.
 * [dtw_identify](https://github.com/jradavenport/dtw_identify/), automatic wavelength calibration using Dynamic Time Warping, developed in PyKOSMOS
-* [kosmos-arc](https://github.com/jradavenport/kosmos-arc), a library of calibrated acr lamp templates for KOSMOS
+* [kosmos-arc](https://github.com/jradavenport/kosmos-arc), a library of calibrated arc lamp templates for KOSMOS at APO
