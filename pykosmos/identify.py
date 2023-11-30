@@ -488,6 +488,7 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
 
 def fit_wavelength(spec, xpoints, wpoints, display=False,
                    mode='poly', deg=7, GPRscale=101,
+                   xerror=0.1,
                    returnpoints=False, returnvar=False):
     """
     Fit the wavelength solution from a series of (pixel, Wavelength)
@@ -546,21 +547,21 @@ def fit_wavelength(spec, xpoints, wpoints, display=False,
     if mode.lower() == 'poly':
         fit = np.polyfit(xpt, wpt, deg)
         wavesolved = np.polyval(fit, spec.spectral_axis.value)
-        fpt = np.polyval(fit, xpt)
+        fpt = np.polyval(fit, xpoints)
 
     if mode.lower() == 'spline':
         spl = UnivariateSpline(xpt, wpt, ext=0, k=3, s=1e3)
         wavesolved = spl(spec.spectral_axis.value)
-        fpt = spl(xpt)
+        fpt = spl(xpoints)
 
     if mode.lower() == 'interp':
         spl = interp1d(xpt, wpt, kind=deg, fill_value='extrapolate')
         wavesolved = spl(spec.spectral_axis.value)
-        fpt = spl(xpt)
+        fpt = spl(xpoints)
 
     if mode.lower() == 'gp':
         # assume 1/2 pixel precision of centering arc lines (prob better actually)
-        yerr = np.ones_like(xpt) * np.mean(np.abs(np.diff(spec.spectral_axis.value))) / 2
+        yerr = np.ones_like(xpt) * np.mean(np.abs(np.diff(spec.spectral_axis.value))) * xerror
 
         # follow BASIC tutorial from "george"
         # https://george.readthedocs.io/en/latest/tutorials/first/
@@ -585,11 +586,11 @@ def fit_wavelength(spec, xpoints, wpoints, display=False,
         # print(result)
         gp.set_parameter_vector(result.x)
 
-        wavesolved, wavesolved_var = gp.predict(wpt, spec.spectral_axis.value, return_var=True)
-        fpt = gp.predict(wpt, xpt, return_var=False)
+        wavesolved, wavesolved_var = gp.predict(wpt, spec.spectral_axis.value, return_cov=False, return_var=True)
+        fpt = gp.predict(wpt, xpoints, return_cov=False, return_var=False)
 
     if display:
-        plt.scatter(xpt, wpt - fpt)
+        plt.scatter(xpt, wpt - fpt[srt])
         plt.xlabel('Xpoints')
         plt.ylabel('Residuals')
 
