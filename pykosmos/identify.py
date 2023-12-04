@@ -21,6 +21,9 @@ from specutils.manipulation import FluxConservingResampler, gaussian_smooth
 from specutils.utils.wcs_utils import air_to_vac as a2v
 import os
 import pandas as pd
+import glob
+import astropy.units as u
+
 
 __all__ = ['identify_widget', 'loadlinelist', 'identify_nearest',
            'identify_dtw', 'find_peaks', 'fit_wavelength', 'air_to_vac']
@@ -115,7 +118,7 @@ def find_peaks(wave, flux, pwidth=10, pthreshold=0.97, minsep=1):
     return pcent_pix[okcent], wcent_pix[okcent]
 
 
-def loadlinelist(file):
+def loadlinelist(file, fullpath=False):
     """
     Load a list of arclamp lines from the supplied library of files in the
     directory: pykosmos/resources/linelists.
@@ -126,19 +129,30 @@ def loadlinelist(file):
     Parameters
     ----------
     file : str
-        name of linelist to load
+        name of, or full path to, linelist to load
+    fullpath : bool, default=False
+        If True, file lists the full path to the line list, rather
+        than assuming one of the included directories.
 
     Returns
     -------
     numpy array of arclines
+
+    Example
+    -------
+    lines = pk.loadlinelist('ctiohenear.dat')
     """
 
-    dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                       'resources', 'linelists')
+    if not fullpath:
+        dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                        'resources', 'linelists')
 
-    if not os.path.isfile(os.path.join(dir, file)):
-        msg2 = "No valid linelist file found at: " + os.path.join(dir, file)
-        raise ValueError(msg2)
+        if not os.path.isfile(os.path.join(dir, file)):
+            msg2 = "No valid linelist file found at: " + os.path.join(dir, file)
+            raise ValueError(msg2)
+        readfile = os.path.join(dir, file)
+    else:
+        readfile = file
 
     # astropy Tables try too hard here, dont have the control to only read a single column...
     # so we're switching to Pandas for this step!
@@ -146,9 +160,57 @@ def loadlinelist(file):
     # henear_tbl['wave'].unit = u.AA
     # arc = henear_tbl['wave']
 
-    df = pd.read_table(os.path.join(dir, file), usecols=(0,), names=('wave',),
+    df = pd.read_table(readfile, usecols=(0,), names=('wave',),
                        delim_whitespace=True, comment='#')
     arc = df['wave'].values  # * u.angstrom
+    return arc
+
+
+def loadarctemplate(file, fullpath=False, help=False):
+    """
+    Load a calibrated arclamp spectrum from the supplied library of files in the
+    directory: pykosmos/resources/arctemplates.
+
+    These are used in e.g. automated wavelength calibration with `identify_dtw`.
+
+    Parameters
+    ----------
+    file : str
+        name of, or full path to, arctemplate to load
+    fullpath : bool, default=False
+        If True, file lists the full path to the template, rather
+        than assuming one of the included directories.
+    help : bool, default=False
+        Return a listing of the available .spec templates
+        included in PyKOSMOS (using glob)
+
+    Returns
+    -------
+    Spectrum1D of the template, or list of available templates
+
+    Example
+    -------
+    template = pk.loadarctemplate('NeRed1.18-ctr.spec')
+    """
+
+    dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                       'resources', 'arctemplates')
+
+    if help:
+        return glob.glob(os.path.join(dir, '*.spec'))
+
+    if not fullpath:
+        if not os.path.isfile(os.path.join(dir, file)):
+            msg2 = "No valid linelist file found at: " + os.path.join(dir, file)
+            raise ValueError(msg2)
+        readfile = os.path.join(dir, file)
+    else:
+        readfile = file
+
+    df = pd.read_csv(readfile)
+    arc = Spectrum1D(spectral_axis=df['wave'].values * u.angstrom, 
+                     flux=df['flux'].values * u.adu / u.s)
+
     return arc
 
 
@@ -389,7 +451,7 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
         the observed Arc-lamp spectrum to align, as returned by e.g. BoxcarExtract
         spectral axis typically has units of pixels.
     ref : Spectrum1D object
-        reference spectrum to match to
+        reference spectrum to match to, possibly loaded via `loadarctemplate`
     upsample : bool (default=True)
         do the DTW on an up-sampled version of the observed arc and reference
         spectra using a gaussian smooth. Linearlly down-sample result.
