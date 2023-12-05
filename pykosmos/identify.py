@@ -25,8 +25,9 @@ import glob
 import astropy.units as u
 
 
-__all__ = ['identify_widget', 'loadlinelist', 'identify_nearest',
-           'identify_dtw', 'find_peaks', 'fit_wavelength', 'air_to_vac']
+__all__ = ['loadlinelist', 'loadarctemplate', 
+           'identify_widget', 'identify_nearest', 'identify_dtw', 
+           'find_peaks', 'fit_wavelength', 'air_to_vac']
 
 def _gaus(x, a, b, x0, sigma):
     """
@@ -166,7 +167,7 @@ def loadlinelist(file, fullpath=False):
     return arc
 
 
-def loadarctemplate(file, fullpath=False, help=False):
+def loadarctemplate(file=None, fullpath=False, help=False):
     """
     Load a calibrated arclamp spectrum from the supplied library of files in the
     directory: pykosmos/resources/arctemplates.
