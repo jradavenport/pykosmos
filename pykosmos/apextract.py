@@ -133,7 +133,7 @@ def trace(img, nbins=20, guess=None, window=None,
     popt_tot, pcov = curve_fit(_gaus, yy, ztot, p0=peak_guess)
 
     if window is not None:
-        ilum2 = yy[np.arange(peak_y-window, peak_y+window, dtype=np.int)]
+        ilum2 = yy[np.arange(peak_y-window, peak_y+window, dtype=int)]
     else:
         ilum2 = yy
 
