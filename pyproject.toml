@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pykosmos"
-version = "0.3.4"
+version = "0.3.5"
 authors = [
   { name="James Davenport", email="jrad@uw.edu" },
 ]
@@ -27,6 +27,8 @@ dependencies = [
   "specutils>=1.12.0",
   "ccdproc>=2.4.1",
   "dtw-python>=1.3",
+  "ipympl",
+  "george > 0.4"
 ]
 
 [project.urls]
