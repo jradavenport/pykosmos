@@ -430,7 +430,8 @@ def identify_widget(arcspec, silent=False):
 def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
                  step_pattern='symmetric1',
                  open_begin=False, open_end=False,
-                 peak_spline=True, pthreshold=0.95):
+                 peak_spline=True, pthreshold=0.95, 
+                 return_peaks=True):
     """
     Align an arc lamp spectrum in pixel-units to a reference spectrum
     in wavelength units using Dynamic Time Warping (DTW).
@@ -471,8 +472,11 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
         own interpolation of the line wavelengths.
         NEED TO UPDATE DESCRIPTION HERE... RETURNS ONLY PEAKS, LIKE OTHER IDENTIFY MODES!
     pthreshold : float (default=0.95)
-        Number between 0 and 1, the threshold to use in defining
-        "peaks" in the spectrum if `peak_spline=True`.
+        Number between 0 and 1, the percentile threshold to use in 
+        finding "peaks" in the spectrum (i.e. emission lines)
+    return_peaks : bool (default=True):
+        returns the xpts and wpts for just the peaks (lines) found from
+        the pthreshold parameter
     display : bool (optional, default=False)
         if set, produce a plot of pixel vs wavelength solution
 
@@ -525,9 +529,12 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
         wav_guess0 = wav_guess
         wav_guess = np.interp(arc.spectral_axis.value, x1.spectral_axis.value, wav_guess0)
 
+    # behavior now is to always find peaks
+    pks = np.where((arc.flux.value >= np.percentile(arc.flux.value, pthreshold*100)))[0]
+    
+    # peak_spline was the way before, but now it's optional
+    # can hand outputs to fit_wavelength directly!
     if peak_spline:
-        pks = np.where((arc.flux.value >= np.percentile(arc.flux.value, pthreshold*100)))[0]
-
         spl = UnivariateSpline(pks, wav_guess[pks],
                                ext=0, k=3, s=len(pks)*10)
         wav_guess = spl(arc.spectral_axis.value)
@@ -535,16 +542,16 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
     # plot pixel observed vs wavelength matched
     if display:
         plt.plot(arc.spectral_axis.value, wav_guess)
-        if peak_spline:
-            plt.scatter(pks, wav_guess[pks], alpha=0.8)
+        plt.scatter(pks, wav_guess[pks], alpha=0.8)
         plt.xlabel(arc.spectral_axis.unit)
         plt.ylabel(ref.spectral_axis.unit)
 
-    # to fit w/ other "identify" methods, return (pixels, wavelength)
-    xpoints, wpoints = arc.spectral_axis.value, wav_guess * ref.spectral_axis.unit
+    xpoints, wpoints = pks, wav_guess[pks] * ref.spectral_axis.unit
 
-    if peak_spline:
-        xpoints, wpoints = pks, wav_guess[pks] * ref.spectral_axis.unit
+    # the entire spectral axis, rather than just the peaks
+    # use if you want to do your own peak finding
+    if not return_peaks:
+        xpoints, wpoints = arc.spectral_axis.value, wav_guess * ref.spectral_axis.unit
 
     return xpoints, wpoints
 
@@ -607,6 +614,8 @@ def fit_wavelength(spec, xpoints, wpoints, display=False,
     wpt = np.array(wpoints.value)[srt]
     fpt = np.zeros_like(xpt)  # the fit wavelength points
 
+    fluxout = spec.flux.value
+
     if mode.lower() == 'poly':
         fit = np.polyfit(xpt, wpt, deg)
         wavesolved = np.polyval(fit, spec.spectral_axis.value)
@@ -650,6 +659,12 @@ def fit_wavelength(spec, xpoints, wpoints, display=False,
         gp.set_parameter_vector(result.x)
 
         wavesolved, wavesolved_var = gp.predict(wpt, spec.spectral_axis.value, return_cov=False, return_var=True)
+        # the GP can possibly go the wrong direction... not good. 
+        wsort = np.argsort(wavesolved)
+        wavesolved = wavesolved[wsort]
+        wavesolved_var = wavesolved_var[wsort]
+        fluxout = fluxout[wsort]
+
         fpt = gp.predict(wpt, xpoints, return_cov=False, return_var=False)
 
     if display:
@@ -658,7 +673,7 @@ def fit_wavelength(spec, xpoints, wpoints, display=False,
         plt.ylabel('Residuals')
 
     outspec = Spectrum1D(spectral_axis=wavesolved * wpoints.unit,
-                         flux=spec.flux,
+                         flux=fluxout * spec.flux.unit,
                          uncertainty=spec.uncertainty
                          )
     if returnpoints:
