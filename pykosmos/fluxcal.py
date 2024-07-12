@@ -44,7 +44,7 @@ def mag2flux(spec_in, zeropt=48.60):
     return spec_out
 
 
-def obs_extinction(obs_file):
+def obs_extinction(obs_file, fullpath=False):
     """
     Load the observatory-specific airmass extinction file from the supplied library
     in the directory pykosmos/resources/extinction
@@ -57,7 +57,9 @@ def obs_extinction(obs_file):
 
         Following IRAF standard, extinction files have 2-column format:
         wavelength (Angstroms), Extinction (Mag per Airmass)
-
+    fullpath : bool, default=False
+        If True, obs_file lists the full path to the extinction file, rather
+        than assuming one from the included directories.
     Returns
     -------
     Astropy Table with the observatory extinction data, columns have names
@@ -70,11 +72,16 @@ def obs_extinction(obs_file):
     dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                        'resources', 'extinction')
 
-    if not os.path.isfile(os.path.join(dir, obs_file)):
-        msg2 = "No valid observatory extinction file found at: " + os.path.join(dir, obs_file)
-        raise ValueError(msg2)
+    if not fullpath:
+        if not os.path.isfile(os.path.join(dir, obs_file)):
+            msg2 = "No valid observatory extinction file found at: " + os.path.join(dir, obs_file)
+            raise ValueError(msg2)
+        readfile = os.path.join(dir, obs_file)
+    else:
+        readfile = obs_file
+
     # read in the airmass extinction curve
-    Xfile = Table.read(os.path.join(dir, obs_file), format='ascii', names=('wave', 'X'))
+    Xfile = Table.read(readfile, format='ascii', names=('wave', 'X'))
     Xfile['wave'].unit = 'AA'
 
     return Xfile
@@ -113,7 +120,7 @@ def airmass_cor(object_spectrum, airmass, Xfile):
     return object_spectrum.multiply(airmass_ext * u.dimensionless_unscaled)
 
 
-def onedstd(stdstar):
+def onedstd(stdstar, fullpath=False):
     """
     Load the one-dimensional standard star from the supplied library
     "onedstd", originally from IRAF. The provenance of these reference
@@ -131,6 +138,9 @@ def onedstd(stdstar):
 
         If no standard is supplied, or an improper path is given,
         will raise a ValueError.
+    fullpath : bool, default=False
+        If True, stdstar lists the full path to the file, rather
+        than assuming one from the included directories.
 
     Returns
     -------
@@ -140,12 +150,16 @@ def onedstd(stdstar):
     std_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                            'resources', 'onedstds')
 
-    if not os.path.isfile(os.path.join(std_dir, stdstar)):
-        msg2 = "No valid standard star found at: " + os.path.join(std_dir, stdstar)
-        raise ValueError(msg2)
+    if not fullpath:
+        if not os.path.isfile(os.path.join(std_dir, stdstar)):
+            msg2 = "No valid standard star found at: " + os.path.join(std_dir, stdstar)
+            raise ValueError(msg2)
+        readfile = os.path.join(std_dir, stdstar)
+    else:
+        readfile = stdstar
 
     # read the ASCII table in
-    standard = Table.read(os.path.join(std_dir, stdstar), format='ascii',
+    standard = Table.read(readfile, format='ascii',
                           names=('wave', 'mag', 'width'))
 
     # add standard units to everything
