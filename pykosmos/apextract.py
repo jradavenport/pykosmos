@@ -225,12 +225,20 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
     warn("PyKOSMOS BoxcarExtract is now a wrapper for functions within specreduce.extract.", 
                   DeprecationWarning, stacklevel=2)
     
+    img_to_ext = img
     # old DIS default was Saxis=0, Waxis=1, shape = (1028,2048)
     # KOSMOS is swapped, shape = (4096, 2148)
     if (Saxis == 1) | (Waxis == 0):
         # if either axis is swapped, swap them both to be sure!
         Saxis = 1
         Waxis = 0
+
+        # if swapped (Saxis=1,Waxis=0), need to transpose before pass to specreduce functions,
+        # which don't support swapped axis correctly yet
+        if isinstance(img, (CCDData)):
+            img_to_ext = img.data.T
+        else:
+            img_to_ext = img.T
 
     if apwidth < 1:
         raise ValueError('apwidth must be >= 1')
@@ -241,22 +249,29 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
 
     # need to convert trace_line into a new trace object
     if isinstance(trace_line, (np.ndarray)):
-        trace_obj = ArrayTrace(img, trace_line)
+        trace_obj = ArrayTrace(img_to_ext, trace_line)
+        if len(trace_obj.trace.data) != len(trace_line):
+            raise Exception('Error: Length of trace does not equal Waxis shape.')
     else:
         trace_obj = trace_line
 
-    bg = Bkgd.two_sided(img, trace_obj, separation=skysep, width=skywidth, 
-                              disp_axis=Waxis, crossdisp_axis=Saxis)
+    if len(trace_obj.trace.data) != img.shape[Waxis]:
+        raise Exception('Error: Length of trace does not equal Waxis shape.')
+    
+    # disable disp_axis and crossdisp_axis, since they not being broadcast correctly yet
+    bg = Bkgd.two_sided(img_to_ext, trace_obj, separation=skysep, width=skywidth)
+                        # disp_axis=Waxis, crossdisp_axis=Saxis)
 
     skyspec = bg.bkg_spectrum()
 
-    img_to_ext = img
     # should we subtract the background (sky) before extraction?
     if bkgd_sub:
-        img_to_ext = img - bg
+        img_to_ext = img_to_ext - bg
 
-    extr = BExtract(img_to_ext, trace_obj, width=apwidth, 
-                    disp_axis=Waxis, crossdisp_axis=Saxis)
+    # disable disp_axis and crossdisp_axis, since they not being broadcast correctly yet
+    extr = BExtract(img_to_ext, trace_obj, width=apwidth) 
+                    # disp_axis=Waxis, crossdisp_axis=Saxis)
+
     # this is where we can add the Optimal Extraction option next
 
     # based on aperture phot err description by F. Masci, Caltech:
