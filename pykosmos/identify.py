@@ -428,8 +428,9 @@ def identify_widget(arcspec, silent=False):
 
 
 def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
-                 step_pattern='symmetric1',
-                 open_begin=False, open_end=False,
+                 step_pattern='asymmetric',
+                 window_type='none',
+                 open_begin=True, open_end=True,
                  peak_spline=True, pthreshold=0.95, 
                  return_peaks=True):
     """
@@ -513,6 +514,7 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
     alignment = dtw.dtw(x1.flux.value / np.nanmean(x1.flux.value),
                         x2.flux.value / np.nanmean(x2.flux.value),
                         keep_internals=True, step_pattern=step_pattern,
+                        window_type=window_type,
                         open_begin=open_begin, open_end=open_end)
 
     wav_guess = np.zeros_like(x1.spectral_axis.value)
