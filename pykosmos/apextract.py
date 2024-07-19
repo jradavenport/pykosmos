@@ -144,7 +144,7 @@ def trace(img, nbins=20, guess=None, window=None,
         return my
 
 
-def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
+def BoxcarExtract(img, trace_line, apwidth=8, skysep=7, skywidth=3, skydeg=0,
                   Saxis=0, Waxis=1, display=False, ax=None,
                   bkgd_sub=True, return_extract=False, return_sky=False):
     """
@@ -175,10 +175,10 @@ def BoxcarExtract(img, trace_line, apwidth=8, skysep=3, skywidth=7, skydeg=0,
         (default is 8 pixels, must be at least 1 pixel)
     skysep : int, optional
         The separation in pixels from the aperture to the sky window.
-        (Default is 3, must be at least 1 pixel)
+        (Default is 7, must be at least 1 pixel)
     skywidth : int, optional
         The width in pixels of the sky windows on either side of the
-        aperture. (Default is 7, must be at least 1 pixel)
+        aperture. (Default is 3, must be at least 1 pixel)
     skydeg : int, optional
         The polynomial order to fit between the sky windows.
         (Default is 0)

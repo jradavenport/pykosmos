@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pykosmos"
-version = "0.3.7.4"
+version = "0.3.7.5"
 authors = [
   { name="James Davenport", email="jrad@uw.edu" },
 ]

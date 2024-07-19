@@ -530,9 +530,9 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
     else:
         x1, x2 = arc, ref
 
-    # Normalize by the mean, seems to help if amplitudes are vastly different.
-    alignment = dtw.dtw(x1.flux.value / np.nanmean(x1.flux.value),
-                        x2.flux.value / np.nanmean(x2.flux.value),
+    # Center at the mean, normalize by the max amplitude. Seems to help if amplitudes are vastly different.
+    alignment = dtw.dtw((x1.flux.value - np.nanmean(x1.flux.value)) / np.nanmax(x1.flux.value),
+                        (x2.flux.value - np.nanmean(x2.flux.value)) / np.nanmax(x2.flux.value),
                         keep_internals=True, step_pattern=step_pattern,
                         window_type=window_type,
                         open_begin=open_begin, open_end=open_end)
