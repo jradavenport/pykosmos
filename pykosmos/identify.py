@@ -14,6 +14,7 @@ import ipywidgets as widgets
 import numpy as np
 import matplotlib.pyplot as plt
 from IPython.display import display
+from scipy.signal import find_peaks as speaks
 from scipy.optimize import curve_fit
 from scipy.interpolate import UnivariateSpline, interp1d
 from specutils import Spectrum1D
@@ -55,10 +56,15 @@ def _gaus(x, a, b, x0, sigma):
     return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
 
 
-def find_peaks(wave, flux, pwidth=10, pthreshold=0.97, minsep=1):
+def find_peaks(wave, flux, pwidth=5, pthreshold=0.97, minsep=5, 
+               use_scipy=True):
     """
     Given a slice thru an arclamp image, find the significant peaks.
-    Originally from PyDIS
+    Centroids each peak with a simple Gaussian fit. Default behavior
+    now is to ue scipy find_peaks, but can also do a simple percentile
+    threshold to find them.
+
+    (Originally from PyDIS)
 
     Parameters
     ----------
@@ -66,28 +72,39 @@ def find_peaks(wave, flux, pwidth=10, pthreshold=0.97, minsep=1):
         Wavelength (could be approximate)
     flux : `~numpy.ndarray`
         Flux
-    pwidth : float (default=10)
-        the number of pixels around the "peak" to fit over
+    pwidth : float (default=5)
+        the number of pixels around the "peak" to fit a Gaussian curve
+        to centroid the peak positions
     pthreshold : float (default = 0.97)
-        Peak threshold, between 0 and 1
-    minsep : float (default=1)
+        if use_scipy=False, is a percentile threshold between 0 and 1
+        if use_scipy=True, the peak threshold is computed as:
+            `pthreshold * (abs(mean(flux) - median(flux)))
+        and can accpet values > 1 to make more strict.
+    minsep : float (default=5)
         Minimum separation
+    use_scipy: bool (default=True)
+        If True, use scipy.signal.find_peaks instead of a percentile threshold
 
     Returns
     -------
     Peak Pixels, Peak Wavelengths
     """
-    # sort data, cut top x% of flux data as peak threshold
-    flux_thresh = np.percentile(flux, pthreshold*100)
+    if use_scipy:
+        mm = pthreshold * np.abs(np.nanmean(flux) - np.nanmedian(flux))
+        pk, _ = speaks(flux, height=mm, distance=minsep)
 
-    # find flux above threshold
-    high = np.where((flux >= flux_thresh))[0]
+    else:
+        # sort data, cut top x% of flux data as peak threshold
+        flux_thresh = np.percentile(flux, pthreshold*100)
 
-    # find  individual peaks (separated by > 1 pixel)
-    # this is horribly ugly code... but i think works
-    pk = high[1:][((high[1:]-high[:-1]) > minsep)]
+        # find flux above threshold
+        high = np.where((flux >= flux_thresh))[0]
 
-    # offset from start/end of array by at least same # of pixels
+        # find  individual peaks (separated by > minsep pixels)
+        # this is horribly ugly code... but i think works
+        pk = high[1:][((high[1:]-high[:-1]) > minsep)]
+
+    # reject spurious peaks near ends of spectrum
     pk = pk[pk > pwidth]
     pk = pk[pk < (len(flux) - pwidth)]
 
@@ -116,7 +133,11 @@ def find_peaks(wave, flux, pwidth=10, pthreshold=0.97, minsep=1):
     wcent_pix, ss = np.unique(wcent_pix, return_index=True)
     pcent_pix = pcent_pix[ss]
     okcent = np.where((np.isfinite(pcent_pix)))[0]
-    return pcent_pix[okcent], wcent_pix[okcent]
+
+    psrt = np.argsort(pcent_pix[okcent])
+    pout = pcent_pix[okcent][psrt]
+    wout = wcent_pix[okcent][psrt]
+    return pout, wout
 
 
 def loadlinelist(file, fullpath=False):
@@ -431,7 +452,7 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
                  step_pattern='asymmetric',
                  window_type='none',
                  open_begin=True, open_end=True,
-                 peak_spline=True, pthreshold=0.95, 
+                 peak_spline=False, pthreshold=2, 
                  return_peaks=True):
     """
     Align an arc lamp spectrum in pixel-units to a reference spectrum
@@ -472,9 +493,8 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
         If you don't like the spline default, set to False and do your
         own interpolation of the line wavelengths.
         NEED TO UPDATE DESCRIPTION HERE... RETURNS ONLY PEAKS, LIKE OTHER IDENTIFY MODES!
-    pthreshold : float (default=0.95)
-        Number between 0 and 1, the percentile threshold to use in 
-        finding "peaks" in the spectrum (i.e. emission lines)
+    pthreshold : float (default=2)
+        Threshold used when passed to `find_peaks` with `use_scipy=True`
     return_peaks : bool (default=True):
         returns the xpts and wpts for just the peaks (lines) found from
         the pthreshold parameter
@@ -531,27 +551,29 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
         wav_guess0 = wav_guess
         wav_guess = np.interp(arc.spectral_axis.value, x1.spectral_axis.value, wav_guess0)
 
-    # behavior now is to always find peaks
-    pks = np.where((arc.flux.value >= np.percentile(arc.flux.value, pthreshold*100)))[0]
-    
-    # peak_spline was the way before, but now it's optional
-    # can hand outputs to fit_wavelength directly!
+    # find peaks in spectrum
+    pks, wpks = find_peaks(wav_guess, arc.flux.value, use_scipy=True, pthreshold=pthreshold)
+
+    # optionally fit spline to the peaks. 
+    # probably don't need to do here, do in `fit_wavelength` instead
     if peak_spline:
-        spl = UnivariateSpline(pks, wav_guess[pks],
+        spl = UnivariateSpline(pks, wpks,
                                ext=0, k=3, s=len(pks)*10)
         wav_guess = spl(arc.spectral_axis.value)
 
     # plot pixel observed vs wavelength matched
     if display:
+        plt.figure()
         plt.plot(arc.spectral_axis.value, wav_guess)
-        plt.scatter(pks, wav_guess[pks], alpha=0.8)
+        plt.scatter(pks, wpks, alpha=0.8)
         plt.xlabel(arc.spectral_axis.unit)
         plt.ylabel(ref.spectral_axis.unit)
 
-    xpoints, wpoints = pks, wav_guess[pks] * ref.spectral_axis.unit
+    xpoints, wpoints = pks, wpks * ref.spectral_axis.unit
 
     # the entire spectral axis, rather than just the peaks
     # use if you want to do your own peak finding
+    # this will be the DTW alignment result, unless peak_spline=True
     if not return_peaks:
         xpoints, wpoints = arc.spectral_axis.value, wav_guess * ref.spectral_axis.unit
 
