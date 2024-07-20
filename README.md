@@ -5,7 +5,7 @@
 An easy to use reduction package for one-dimensional longslit spectroscopy. 
 
 ## Installation
-The easiest way to install is via pip:
+The easiest way to install is via [pip](https://pypi.org/project/pykosmos/):
 ````
 pip install pykosmos
 ````
@@ -20,13 +20,13 @@ There needs to be many worked examples available.
 ## Motivation
 We need simple to use, standalone reduction tools that can handle most tasks automatically.
 
-The predecessor was [PyDIS](https://github.com/StellarCartography/pydis), a semi-complete standalone reduction suite in Python that has been used for many instruments and [publications](https://ui.adsabs.harvard.edu/abs/2016zndo.....58753D/abstract) so far! Since then, many [astropy](https://www.astropy.org) components have advanced to better handle many of the tasks PyDIS attempted, but [specreduce](https://github.com/astropy/specreduce) is not complete yet (I share in this blame).
+The predecessor was [PyDIS](https://github.com/StellarCartography/pydis), a semi-complete standalone reduction suite in Python that has been used for many instruments and [publications](https://ui.adsabs.harvard.edu/abs/2016zndo.....58753D/abstract) so far! Since then, many [astropy](https://www.astropy.org) components have advanced to better handle the tasks PyDIS attempted, including  [specreduce](https://github.com/astropy/specreduce) that has inherited methods and workflow structure from PyDIS and PyKOSMOS.
 
-My [original blog post](https://jradavenport.github.io/2015/04/01/spectra.html) on the topic from 2015 still largely stands...
+My [original blog post](https://jradavenport.github.io/2015/04/01/spectra.html) on the topic from 2015 still largely stands.
 
-## Links
+## Related Links
 * [PyKOSMOS](https://github.com/jradavenport/pykosmos/) on GitHub
-* [KOSMOS](https://www.apo.nmsu.edu/arc35m/Instruments/KOSMOS/) instrument page at APO
-* [PyDIS](https://github.com/StellarCartography/pydis), the predecessor.
 * [dtw_identify](https://github.com/jradavenport/dtw_identify/), automatic wavelength calibration using Dynamic Time Warping, developed in PyKOSMOS
 * [kosmos-arc](https://github.com/jradavenport/kosmos-arc), a library of calibrated arc lamp templates for KOSMOS at APO
+* [KOSMOS](https://www.apo.nmsu.edu/arc35m/Instruments/KOSMOS/) instrument page at APO
+* [PyDIS](https://github.com/StellarCartography/pydis), the predecessor.
