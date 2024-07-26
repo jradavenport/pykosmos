@@ -552,7 +552,8 @@ def identify_dtw(arc, ref, display=False, upsample=False, Ufactor=5,
         wav_guess = np.interp(arc.spectral_axis.value, x1.spectral_axis.value, wav_guess0)
 
     # find peaks in spectrum
-    pks, wpks = find_peaks(wav_guess, arc.flux.value, use_scipy=True, pthreshold=pthreshold)
+    pks, wpks = find_peaks(wav_guess, (x1.flux.value - np.nanmean(x1.flux.value)) / np.nanmax(x1.flux.value), 
+                           use_scipy=True, pthreshold=pthreshold)
 
     # optionally fit spline to the peaks. 
     # probably don't need to do here, do in `fit_wavelength` instead
